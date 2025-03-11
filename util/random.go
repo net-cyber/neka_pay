@@ -6,7 +6,7 @@ import (
 	"time"
 )
 
-const alphabet = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ"
+const alphabet = "abcdefghijklmnopqrstuvwxyz"
 
 func init() {
 	rand.Seed(time.Now().UnixNano())
@@ -29,11 +29,11 @@ func RandomOwner() string {
 }
 
 func RandomMoney() int64 {
-	return RandomInt(0, 1000)
+	return RandomInt(0, 10000)
 }
 
 func RandomCurrency() string {
-	currencies := []string{"ETB"}
+	currencies := []string{"ETB", "USD", "ERU"}
 	return currencies[rand.Intn(len(currencies))]
 }
 

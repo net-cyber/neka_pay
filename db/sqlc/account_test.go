@@ -5,7 +5,6 @@ import (
 	"database/sql"
 	"testing"
 	"time"
-
 	"github.com/net-cyber/neka_pay/util"
 	"github.com/stretchr/testify/require"
 )
@@ -56,7 +55,7 @@ func createRandomAccount(t *testing.T) Account {
 	// check if the account id is not zero
 	require.NotZero(t, account.ID)
 	// check if the account created at is not zero
-	require.NotZero(t, account.CreatedAt)
+	require.NotZero(t, account.CreatedAt)  
 
 	return account
 }

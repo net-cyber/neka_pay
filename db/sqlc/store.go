@@ -6,6 +6,8 @@ import (
 	"fmt"
 )
 
+var txkey = struct{}{}
+
 // store provides all functions to excute DB queries and transactions
 type Store struct {
 	*Queries
@@ -34,9 +36,9 @@ func (store *Store) execTx(ctx context.Context, fn func(*Queries) error) error {
 
 	if err != nil {
 		// If there was an error, attempt to rollback the transaction
-		if rbErr := tx.Rollback();
+		 rbErr := tx.Rollback();
 		//  If there was an error during the rollback,
-		rbErr != nil {
+		if rbErr != nil {
 			return fmt.Errorf("tx err: %v, rb err: %v", err, rbErr)
 		}
 		return err
@@ -70,15 +72,21 @@ func (store *Store) TransferTx(ctx context.Context, args TransferTxParams) (Tran
 		ctx,
 		func(q *Queries) error {
 			var err error
-			result.Transfer, err = q.CreateTransfer(ctx,
-				CreateTransferParams{
-					FromAccountID: args.FromAccountID,
-					ToAccountID:   args.ToAccountID,
-					Amount:        args.Amount,
-				})
+
+			txName := ctx.Value(txkey)
+
+			fmt.Println(txName, "Create transfer")
+
+			result.Transfer, err = q.CreateTransfer(
+				ctx,
+				CreateTransferParams(args))
 			if err != nil {
 				return err
 			}
+
+			fmt.Println(txName, "Create Entry 1")
+
+			// create from entry in the DB
 			result.FromEntry, err = q.CreateEntry(
 				ctx,
 				CreateEntryParams{
@@ -90,6 +98,8 @@ func (store *Store) TransferTx(ctx context.Context, args TransferTxParams) (Tran
 				return err
 			}
 
+			fmt.Println(txName, "Create Entry 2")
+			// create to entry in the DB
 			result.ToEntry, err = q.CreateEntry(
 				ctx,
 				CreateEntryParams{
@@ -100,7 +110,42 @@ func (store *Store) TransferTx(ctx context.Context, args TransferTxParams) (Tran
 			if err != nil {
 				return err
 			}
+
+			fmt.Println(txName, "get account 1 for update")
 			// TODO: update accounts balance
+			// substract form account 1
+			Account1, err := q.GetAccountForUpdate(ctx, args.FromAccountID)
+			if err != nil {
+				return err
+			}
+			fmt.Println(txName, " update account 1")
+			result.FromAccount, err = q.UpdateAccount(ctx, UpdateAccountParams{
+				ID: args.FromAccountID,
+				Balance: Account1.Balance - args.Amount,
+
+			})
+
+			if err != nil {
+				return err
+			}
+			fmt.Println(txName, "get account 2 for update")
+			// add to account 2
+			account2, err := q.GetAccountForUpdate(ctx, args.ToAccountID)
+			if err != nil {
+				return err
+			}
+
+			fmt.Println(txName, " update account 2")
+			result.ToAccount, err = q.UpdateAccount(ctx, UpdateAccountParams{
+				ID: args.ToAccountID,
+				Balance: account2.Balance + args.Amount,
+
+			})
+
+			if err != nil {
+				return err
+			}
+
 			return nil
 
 		})

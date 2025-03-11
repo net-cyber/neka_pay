@@ -10,7 +10,7 @@ import (
 )
 
 const createTransfer = `-- name: CreateTransfer :one
-INSERT INTO transfers (from_account_id, to_account_id, amount) VALUES ($1, $2, $3) RETURNING id, from_account_id, to_account_id, amount, created_at
+INSERT INTO transfer (from_account_id, to_account_id, amount) VALUES ($1, $2, $3) RETURNING id, from_account_id, to_account_id, amount, created_at
 `
 
 type CreateTransferParams struct {
@@ -33,7 +33,7 @@ func (q *Queries) CreateTransfer(ctx context.Context, arg CreateTransferParams) 
 }
 
 const deleteTransfer = `-- name: DeleteTransfer :exec
-DELETE FROM transfers WHERE id = $1
+DELETE FROM transfer WHERE id = $1
 `
 
 func (q *Queries) DeleteTransfer(ctx context.Context, id int64) error {
@@ -42,7 +42,7 @@ func (q *Queries) DeleteTransfer(ctx context.Context, id int64) error {
 }
 
 const getTransfer = `-- name: GetTransfer :one
-SELECT id, from_account_id, to_account_id, amount, created_at FROM transfers WHERE id = $1 LIMIT 1
+SELECT id, from_account_id, to_account_id, amount, created_at FROM transfer WHERE id = $1 LIMIT 1 FOR UPDATE
 `
 
 func (q *Queries) GetTransfer(ctx context.Context, id int64) (Transfer, error) {
@@ -59,7 +59,7 @@ func (q *Queries) GetTransfer(ctx context.Context, id int64) (Transfer, error) {
 }
 
 const listTransfers = `-- name: ListTransfers :many
-SELECT id, from_account_id, to_account_id, amount, created_at FROM transfers WHERE from_account_id = $1 OR to_account_id = $1 ORDER BY id LIMIT $2 OFFSET $3
+SELECT id, from_account_id, to_account_id, amount, created_at FROM transfer WHERE from_account_id = $1 OR to_account_id = $1 ORDER BY id LIMIT $2 OFFSET $3
 `
 
 type ListTransfersParams struct {
@@ -98,7 +98,7 @@ func (q *Queries) ListTransfers(ctx context.Context, arg ListTransfersParams) ([
 }
 
 const updateTransfer = `-- name: UpdateTransfer :one
-UPDATE transfers SET amount = $2 WHERE id = $1 RETURNING id, from_account_id, to_account_id, amount, created_at
+UPDATE transfer SET amount = $2 WHERE id = $1 RETURNING id, from_account_id, to_account_id, amount, created_at
 `
 
 type UpdateTransferParams struct {

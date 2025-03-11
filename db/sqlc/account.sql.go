@@ -10,7 +10,7 @@ import (
 )
 
 const createAccount = `-- name: CreateAccount :one
-INSERT INTO accounts (owner, balance, currency) VALUES ($1, $2, $3) RETURNING id, owner, balance, currency, created_at
+INSERT INTO account (owner, balance, currency) VALUES ($1, $2, $3) RETURNING id, owner, balance, currency, created_at
 `
 
 type CreateAccountParams struct {
@@ -33,7 +33,7 @@ func (q *Queries) CreateAccount(ctx context.Context, arg CreateAccountParams) (A
 }
 
 const deleteAccount = `-- name: DeleteAccount :exec
-DELETE FROM accounts WHERE id = $1
+DELETE FROM account WHERE id = $1
 `
 
 func (q *Queries) DeleteAccount(ctx context.Context, id int64) error {
@@ -42,7 +42,7 @@ func (q *Queries) DeleteAccount(ctx context.Context, id int64) error {
 }
 
 const getAccount = `-- name: GetAccount :one
-SELECT id, owner, balance, currency, created_at FROM accounts WHERE id = $1 LIMIT 1
+SELECT id, owner, balance, currency, created_at FROM account WHERE id = $1 LIMIT 1
 `
 
 func (q *Queries) GetAccount(ctx context.Context, id int64) (Account, error) {
@@ -58,8 +58,25 @@ func (q *Queries) GetAccount(ctx context.Context, id int64) (Account, error) {
 	return i, err
 }
 
+const getAccountForUpdate = `-- name: GetAccountForUpdate :one
+SELECT id, owner, balance, currency, created_at FROM account WHERE id = $1 LIMIT 1 FOR UPDATE
+`
+
+func (q *Queries) GetAccountForUpdate(ctx context.Context, id int64) (Account, error) {
+	row := q.db.QueryRowContext(ctx, getAccountForUpdate, id)
+	var i Account
+	err := row.Scan(
+		&i.ID,
+		&i.Owner,
+		&i.Balance,
+		&i.Currency,
+		&i.CreatedAt,
+	)
+	return i, err
+}
+
 const listAccounts = `-- name: ListAccounts :many
-SELECT id, owner, balance, currency, created_at FROM accounts WHERE owner = $1 ORDER BY id LIMIT $2 OFFSET $3
+SELECT id, owner, balance, currency, created_at FROM account WHERE owner = $1 ORDER BY id LIMIT $2 OFFSET $3
 `
 
 type ListAccountsParams struct {
@@ -98,7 +115,7 @@ func (q *Queries) ListAccounts(ctx context.Context, arg ListAccountsParams) ([]A
 }
 
 const updateAccount = `-- name: UpdateAccount :one
-UPDATE accounts SET balance = $2 WHERE id = $1 RETURNING id, owner, balance, currency, created_at
+UPDATE account SET balance = $2 WHERE id = $1 RETURNING id, owner, balance, currency, created_at
 `
 
 type UpdateAccountParams struct {
