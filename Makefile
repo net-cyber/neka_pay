@@ -24,4 +24,21 @@ sqlc:
 	sqlc generate
 test:
 	go test -v -cover ./...
-.PHONY: postgres createdb dropdb migrateup migratedown sqlc test
+server:
+	go run main.go
+postgres-ready:
+	@echo "Waiting for PostgreSQL to be ready..."
+	@for i in 1 2 3 4 5; do \
+		if sudo docker exec postgres-go pg_isready -U root > /dev/null 2>&1; then \
+			echo "PostgreSQL is ready!"; \
+			exit 0; \
+		fi; \
+		echo "PostgreSQL is not ready yet. Waiting..."; \
+		sleep 2; \
+	done; \
+	echo "PostgreSQL did not become ready in time!"; \
+	exit 1
+
+setup: postgres postgres-ready createdb migrateup
+
+.PHONY: postgres createdb dropdb migrateup migratedown sqlc test setup server
