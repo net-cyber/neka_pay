@@ -1,0 +1,109 @@
+<think>
+Let me outline the specific steps for adding a new feature to this particular codebase, which follows a specific pattern of database-first development with SQL, SQLC, Go handlers, and gin routes.
+
+Looking at the existing codebase, I can see they follow this pattern:
+1. Create SQL migrations to define database schema
+2. Define SQL queries 
+3. Generate Go code from SQL with SQLC
+4. Create handler functions in the API package
+5. Register routes in the server
+6. Test the functionality
+
+I'll create a step-by-step guide specific to this codebase's architecture.
+</think>
+
+# General Steps for Adding New Features to This Codebase
+
+Based on your specific codebase architecture, here are the systematic steps to add any new feature:
+
+## 1. Create Database Migration Files
+```bash
+# Create migration files (up and down)
+touch db/migration/00000X_feature_name.up.sql
+touch db/migration/00000X_feature_name.down.sql
+```
+
+- Define your table schema in the `.up.sql` file
+- Define the cleanup steps in the `.down.sql` file
+- Run `make migrateup` to apply the migrations
+
+## 2. Define SQL Queries
+```bash
+# Create a new query file
+touch db/query/feature_name.sql
+```
+
+- Define CRUD operations (Create, Read, Update, Delete)
+- Include any specialized queries needed for your feature
+- Follow the naming conventions you've established (e.g., `:one`, `:many`, `:exec`)
+
+## 3. Generate Go Database Code
+```bash
+# Generate SQLC code
+make sqlc
+```
+
+- This will generate Go code in `db/sqlc/` directory
+- Check the generated files for your new feature
+
+## 4. Add Business Logic to Store (if needed)
+- If your feature requires transactions or complex operations:
+  - Extend the `Store` struct in `db/sqlc/store.go`
+  - Add methods like `YourFeatureTx` similar to the existing `TransferTx`
+
+## 5. Write Database Tests
+```bash
+# Create a test file for your feature
+touch db/sqlc/feature_name_test.go
+```
+
+- Write tests for all generated database operations
+- Include edge cases and error scenarios
+- Run tests with `make test`
+
+## 6. Create API Handlers
+```bash
+# Create a new API file
+touch api/feature_name.go
+```
+
+- Define request/response structs
+- Implement handler functions (create, get, list, update, delete)
+- Add validation logic
+- Connect to the database layer
+
+## 7. Register Routes in Server
+```go
+// Update api/server.go to add your new routes
+func NewServer(store *db.Store) *Server {
+    // ...existing code...
+    
+    // Add your feature routes
+    router.POST("/your_feature", server.createYourFeature)
+    router.GET("/your_feature/:id", server.getYourFeature)
+    router.GET("/your_feature", server.listYourFeature)
+    router.PUT("/your_feature/:id", server.updateYourFeature)
+    router.DELETE("/your_feature/:id", server.deleteYourFeature)
+    
+    // ...existing code...
+}
+```
+
+## 8. Update Main.go (if needed)
+- If your feature requires new configuration or dependencies
+- Update the main function to initialize them
+
+## 9. Manual Testing
+```bash
+# Start the server
+make server
+
+# Test with curl or Postman
+curl -X POST http://localhost:8080/your_feature -d '{"field": "value"}'
+```
+
+## 10. Add to CI/CD (if applicable)
+- Ensure your tests run in the GitHub workflow
+- Update any documentation
+
+This pattern follows your codebase's existing structure and will help maintain consistency across your banking application as you add new features.
