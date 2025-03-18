@@ -16,9 +16,13 @@ dropdb:
 
 migrateup:
 	migrate -path db/migration -database "postgresql://root:secret@localhost:5433/neka_pay?sslmode=disable" -verbose up
+migrateup1:
+	migrate -path db/migration -database "postgresql://root:secret@localhost:5433/neka_pay?sslmode=disable" -verbose up 1
 
 migratedown:
 	migrate -path db/migration -database "postgresql://root:secret@localhost:5433/neka_pay?sslmode=disable" -verbose down
+migratedown1:
+	migrate -path db/migration -database "postgresql://root:secret@localhost:5433/neka_pay?sslmode=disable" -verbose down 1
 
 sqlc:
 	sqlc generate
@@ -41,4 +45,4 @@ postgres-ready:
 
 setup: postgres postgres-ready createdb migrateup
 
-.PHONY: postgres createdb dropdb migrateup migratedown sqlc test setup server
+.PHONY: postgres createdb dropdb migrateup migratedown migrateup1 migratedown1 sqlc test setup server

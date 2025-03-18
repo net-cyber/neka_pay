@@ -10,7 +10,7 @@ import (
 
 type createAccountRequest struct {
 	Owner    string `json:"owner" binding:"required"`
-	Currency string `json:"currency" binding:"required,oneof=ETB USD"`
+	Currency string `json:"currency" binding:"required,currency"`
 }
 
 func (server *Server) createAccount(ctx *gin.Context) {
@@ -29,9 +29,16 @@ func (server *Server) createAccount(ctx *gin.Context) {
 	account, err := server.store.CreateAccount(ctx, arg)
 
 	if err != nil {
+		errCode := db.ErrorCode(err)
+		if errCode == db.ForeignKeyViolation || errCode == db.UniqueViolation {
+			ctx.JSON(http.StatusForbidden, errorResponse(err))
+			return
+		}
 		ctx.JSON(http.StatusInternalServerError, errorResponse(err))
 		return
 	}
+
+
 
 	ctx.JSON(http.StatusOK, account)
 }
