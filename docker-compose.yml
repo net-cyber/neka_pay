@@ -1,0 +1,33 @@
+version: '3.8'
+
+services:
+  postgres:
+    container_name: postgres-go
+    image: postgres:14-alpine
+    environment:
+      - POSTGRES_USER=root
+      - POSTGRES_PASSWORD=secret
+      - POSTGRES_DB=neka_pay
+    ports:
+      - "5433:5432"
+    volumes:
+      - postgres-data:/var/lib/postgresql/data
+    networks:
+      - neka_pay-network
+
+  app:
+    build: .
+    container_name: neka_pay-app
+    depends_on:
+      - postgres
+    ports:
+      - "8080:8080"
+    networks:
+      - neka_pay-network
+
+networks:
+  neka_pay-network:
+    driver: bridge
+
+volumes:
+  postgres-data:
