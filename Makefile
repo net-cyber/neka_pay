@@ -45,4 +45,19 @@ postgres-ready:
 
 setup: postgres postgres-ready createdb migrateup
 
-.PHONY: postgres createdb dropdb migrateup migratedown migrateup1 migratedown1 sqlc test setup server
+docker-up:
+	sudo docker-compose down || true
+	sudo docker stop postgres-go || true
+	sudo docker rm postgres-go || true
+	sudo docker-compose up -d
+
+docker-down:
+	sudo docker-compose down
+
+docker-logs:
+	sudo docker-compose logs -f
+
+docker-migrate:
+	sudo docker exec -it neka_pay-app migrate -path /app/db/migration -database "postgresql://root:secret@postgres-go:5432/neka_pay?sslmode=disable" -verbose up
+
+.PHONY: postgres createdb dropdb migrateup migratedown migrateup1 migratedown1 sqlc test setup server docker-up docker-down docker-logs docker-migrate
