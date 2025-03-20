@@ -15,14 +15,14 @@ dropdb:
 	sudo docker exec -it postgres-go dropdb neka_pay
 
 migrateup:
-	migrate -path db/migration -database "postgresql://root:secret@localhost:5433/neka_pay?sslmode=disable" -verbose up
+	migrate -path db/migration -database "postgresql://root:XMGuMrbcqFl6FzqOjTN8@supperapp.cxsi2giacqr7.eu-north-1.rds.amazonaws.com:5432/supperapp" -verbose up
 migrateup1:
-	migrate -path db/migration -database "postgresql://root:secret@localhost:5433/neka_pay?sslmode=disable" -verbose up 1
+	migrate -path db/migration -database "postgresql://root:XMGuMrbcqFl6FzqOjTN8@supperapp.cxsi2giacqr7.eu-north-1.rds.amazonaws.com:5432/supperapp" -verbose up 1
 
 migratedown:
-	migrate -path db/migration -database "postgresql://root:secret@localhost:5433/neka_pay?sslmode=disable" -verbose down
+	migrate -path db/migration -database "postgresql://root:XMGuMrbcqFl6FzqOjTN8@supperapp.cxsi2giacqr7.eu-north-1.rds.amazonaws.com:5432/supperapp" -verbose down
 migratedown1:
-	migrate -path db/migration -database "postgresql://root:secret@localhost:5433/neka_pay?sslmode=disable" -verbose down 1
+	migrate -path db/migration -database "postgresql://root:XMGuMrbcqFl6FzqOjTN8@supperapp.cxsi2giacqr7.eu-north-1.rds.amazonaws.com:5432/supperapp" -verbose down 1
 
 sqlc:
 	sqlc generate
