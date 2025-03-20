@@ -1,33 +1,20 @@
 version: '3.8'
 
 services:
-  postgres:
-    container_name: postgres-go
-    image: postgres:14-alpine
-    environment:
-      - POSTGRES_USER=root
-      - POSTGRES_PASSWORD=secret
-      - POSTGRES_DB=neka_pay
-    ports:
-      - "5433:5432"
-    volumes:
-      - postgres-data:/var/lib/postgresql/data
-    networks:
-      - neka_pay-network
-
   app:
     build: .
     container_name: neka_pay-app
-    depends_on:
-      - postgres
     ports:
-      - "8080:8080"
-    networks:
-      - neka_pay-network
+      - "8081:8080"
+    environment:
+      - DB_SOURCE=postgresql://root:XMGuMrbcqFl6FzqOjTN8@supperapp.cxsi2giacqr7.eu-north-1.rds.amazonaws.com:5432/supperapp
+      - DB_DRIVER=postgres
+      - SERVER_ADDRESS=0.0.0.0:8080
+      - ACCESS_TOKEN_DURATION=15m
+      - TOKEN_SYMETRIC_KEY=62666c66b508148ca39284740727920b
+    entrypoint: ["./main"]  # Override the wait-for.sh script since we're using RDS
 
 networks:
-  neka_pay-network:
+  default:
+    name: neka_pay-network
     driver: bridge
-
-volumes:
-  postgres-data:
