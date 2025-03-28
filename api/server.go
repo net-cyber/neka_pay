@@ -9,6 +9,7 @@ import (
 	db "github.com/net-cyber/neka_pay/db/sqlc"
 	"github.com/net-cyber/neka_pay/token"
 	"github.com/net-cyber/neka_pay/util"
+	"github.com/prometheus/client_golang/prometheus/promhttp"
 )
 
 // this server will serves HTTP requests for our banking system
@@ -41,6 +42,9 @@ func NewServer(config util.Config, store db.Store) (*Server, error) {
 
 func (server *Server) setupRouter() {
 	router := gin.Default()
+
+	// Add metrics endpoint
+	router.GET("/metrics", gin.WrapH(promhttp.Handler()))
 
 	router.POST("/users", server.createUser)
 	router.POST("/users/login", server.loginUser)
