@@ -18,9 +18,9 @@ dropdb:
 	sudo docker exec -it postgres-go dropdb neka_pay
 
 migrateup:
-	migrate -path db/migration -database "postgresql://root:secret@localhost:5432/neka_pay?sslmode=disable" -verbose up
+	migrate -path db/migration -database "postgresql://root:xUX7uC31CFTYZv4LGR8X@nekapay.cxsi2giacqr7.eu-north-1.rds.amazonaws.com:5432/neka_pay" -verbose up
 migrateup1:
-	migrate -path db/migration -database "postgresql://root:secret@localhost:5432/neka_pay?sslmode=disable" -verbose up 1
+	migrate -path db/migration -database "postgresql://root:xUX7uC31CFTYZv4LGR8X@nekapay.cxsi2giacqr7.eu-north-1.rds.amazonaws.com:5432/neka_pay" -verbose up 1
 
 migratedown:
 	migrate -path db/migration -database "postgresql://root:secret@localhost:5432/neka_pay?sslmode=disable" -verbose down
