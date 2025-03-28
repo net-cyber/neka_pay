@@ -1,0 +1,25 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: neka-pay-api-deployment
+  labels:
+    app: neka-pay-api
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: neka-pay-api
+  template:
+    metadata:
+      labels:
+        app: neka-pay-api
+    spec:
+      containers:
+      - name: neka-pay-api
+        image: 019212531590.dkr.ecr.eu-north-1.amazonaws.com/neka_pay:latest
+        imagePullPolicy: Always
+        ports:
+        - containerPort: 8080
+        #   name: http-server
+        # - containerPort: 9090
+        #   name: grpc-server
