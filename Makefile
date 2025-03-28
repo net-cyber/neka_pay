@@ -1,12 +1,15 @@
 network:
-	sudo docker network create neka_pay-network
+	sudo docker network create neka_pay_network
+
+network.rm:
+	sudo docker network rm neka_pay_network || true
 
 postgres.stop:
 	sudo docker stop postgres-go || true
 	sudo docker rm postgres-go || true
 
 postgres: postgres.stop
-	sudo docker run --name postgres-go --network neka_pay-network -p 5433:5432 -e POSTGRES_USER=root -e POSTGRES_PASSWORD=secret -d postgres:14-alpine
+	sudo docker run --name postgres-go --network neka_pay_network -p 5433:5432 -e POSTGRES_USER=root -e POSTGRES_PASSWORD=secret -d postgres:14-alpine
 
 createdb:
 	sudo docker exec -it postgres-go createdb --username=root --owner=root neka_pay
@@ -45,4 +48,6 @@ postgres-ready:
 
 setup: postgres postgres-ready createdb migrateup
 
-.PHONY: postgres createdb dropdb migrateup migratedown migrateup1 migratedown1 sqlc test setup server
+clean: postgres.stop network.rm
+
+.PHONY: postgres createdb dropdb migrateup migratedown migrateup1 migratedown1 sqlc test setup server network network.rm clean
