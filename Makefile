@@ -9,7 +9,7 @@ postgres.stop:
 	sudo docker rm postgres-go || true
 
 postgres: postgres.stop
-	sudo docker run --name postgres-go --network neka_pay_network -p 5433:5432 -e POSTGRES_USER=root -e POSTGRES_PASSWORD=secret -d postgres:14-alpine
+	sudo docker run --name postgres-go --network neka_pay_network -p 5432:5432 -e POSTGRES_USER=root -e POSTGRES_PASSWORD=secret -d postgres:14-alpine
 
 createdb:
 	sudo docker exec -it postgres-go createdb --username=root --owner=root neka_pay
@@ -18,14 +18,14 @@ dropdb:
 	sudo docker exec -it postgres-go dropdb neka_pay
 
 migrateup:
-	migrate -path db/migration -database "postgresql://root:secret@localhost:5433/neka_pay?sslmode=disable" -verbose up
+	migrate -path db/migration -database "postgresql://root:secret@localhost:5432/neka_pay?sslmode=disable" -verbose up
 migrateup1:
-	migrate -path db/migration -database "postgresql://root:secret@localhost:5433/neka_pay?sslmode=disable" -verbose up 1
+	migrate -path db/migration -database "postgresql://root:secret@localhost:5432/neka_pay?sslmode=disable" -verbose up 1
 
 migratedown:
-	migrate -path db/migration -database "postgresql://root:secret@localhost:5433/neka_pay?sslmode=disable" -verbose down
+	migrate -path db/migration -database "postgresql://root:secret@localhost:5432/neka_pay?sslmode=disable" -verbose down
 migratedown1:
-	migrate -path db/migration -database "postgresql://root:secret@localhost:5433/neka_pay?sslmode=disable" -verbose down 1
+	migrate -path db/migration -database "postgresql://root:secret@localhost:5432/neka_pay?sslmode=disable" -verbose down 1
 
 sqlc:
 	sqlc generate
