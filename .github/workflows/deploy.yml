@@ -13,11 +13,11 @@ jobs:
       - name: Check out code
         uses: actions/checkout@v3
 
-      # - name: Install kubectl
-      #   uses: azure/setup-kubectl@v1
-      #   with:
-      #     version: "v1.21.3"
-      #   id: install
+      - name: Install kubectl
+        uses: azure/setup-kubectl@v4
+        with:
+          version: "v1.31.6"
+        id: install
 
       - name: Configure AWS credentials
         uses: aws-actions/configure-aws-credentials@v4
@@ -44,14 +44,14 @@ jobs:
           docker push -a $ECR_REGISTRY/$ECR_REPOSITORY
 
       # - name: Update kube config
-      #   run: aws eks update-kubeconfig --name simple-bank-eks --region eu-west-1
+      #   run: aws eks update-kubeconfig --name neka-pay-eks --region eu-north-1
 
-      # - name: Deploy image to Amazon EKS
-      #   run: |
-      #     kubectl apply -f eks/aws-auth.yaml
-      #     kubectl apply -f eks/deployment.yaml
-      #     kubectl apply -f eks/service.yaml
-      #     kubectl apply -f eks/issuer.yaml
-      #     kubectl apply -f eks/ingress-nginx.yaml
-      #     kubectl apply -f eks/ingress-http.yaml
-      #     kubectl apply -f eks/ingress-grpc.yaml
+      - name: Deploy image to Amazon EKS
+        run: |
+          kubectl apply -f eks/aws-auth.yaml
+          kubectl apply -f eks/deployment.yaml
+          kubectl apply -f eks/service.yaml
+          kubectl apply -f eks/issuer.yaml
+          kubectl apply -f eks/ingress-nginx.yaml
+          kubectl apply -f eks/ingress-http.yaml
+          kubectl apply -f eks/ingress-grpc.yaml
