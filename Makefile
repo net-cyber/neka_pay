@@ -1,3 +1,4 @@
+DB_URL=postgresql://root:secret@localhost:5432/neka_pay?sslmode=disable
 network:
 	sudo docker network create neka_pay_network
 
@@ -18,14 +19,19 @@ dropdb:
 	sudo docker exec -it postgres-go dropdb neka_pay
 
 migrateup:
-	migrate -path db/migration -database "postgresql://root:xUX7uC31CFTYZv4LGR8X@nekapay.cxsi2giacqr7.eu-north-1.rds.amazonaws.com:5432/neka_pay" -verbose up
+	migrate -path db/migration -database "$(DB_URL)" -verbose up
+
 migrateup1:
-	migrate -path db/migration -database "postgresql://root:xUX7uC31CFTYZv4LGR8X@nekapay.cxsi2giacqr7.eu-north-1.rds.amazonaws.com:5432/neka_pay" -verbose up 1
+	migrate -path db/migration -database "$(DB_URL)" -verbose up 1
 
 migratedown:
-	migrate -path db/migration -database "postgresql://root:secret@localhost:5432/neka_pay?sslmode=disable" -verbose down
+	migrate -path db/migration -database "$(DB_URL)" -verbose down
+
 migratedown1:
-	migrate -path db/migration -database "postgresql://root:secret@localhost:5432/neka_pay?sslmode=disable" -verbose down 1
+	migrate -path db/migration -database "$(DB_URL)" -verbose down 1
+
+new_migration:
+	migrate create -ext sql -dir db/migration -seq $(name)
 
 sqlc:
 	sqlc generate
