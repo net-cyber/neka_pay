@@ -9,10 +9,10 @@ spec:
     - protocol: TCP
       port: 80
       targetPort: 8080
-  type: LoadBalancer
-  #     name: http-service
-  #   - protocol: TCP
-  #     port: 90
-  #     targetPort: grpc-server
-  #     name: grpc-service
+  type: ClusterIP
+  # Uncomment below if you need GRPC
+  # - protocol: TCP
+  #   port: 90
+  #   targetPort: 9090
+  #   name: grpc-service
   # type: ClusterIP

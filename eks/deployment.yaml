@@ -16,7 +16,7 @@ spec:
     spec:
       containers:
       - name: neka-pay-api
-        image: 019212531590.dkr.ecr.eu-north-1.amazonaws.com/neka_pay:latest
+        image: 019212531590.dkr.ecr.eu-north-1.amazonaws.com/neka_pay:903e8df5b941e47c61a019714825cb39d2864fa8
         imagePullPolicy: Always
         ports:
         - containerPort: 8080
