@@ -7,7 +7,7 @@ import "rpc_login_user.proto";
 
 option go_package = "github.com/net-cyber/neka_pay/pb";
 
-service SimpleBankService {
+service NekaPayService {
     rpc CreateUser(CreateUserRequest) returns (CreateUserResponse) {}
     rpc LoginUser(LoginUserRequest) returns (LoginUserResponse) {}
 }

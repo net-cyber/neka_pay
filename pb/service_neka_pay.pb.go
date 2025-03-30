@@ -2,7 +2,7 @@
 // versions:
 // 	protoc-gen-go v1.36.6
 // 	protoc        v3.12.4
-// source: service_simple_bank.proto
+// source: service_neka_pay.proto
 
 package pb
 
@@ -20,27 +20,27 @@ const (
 	_ = protoimpl.EnforceVersion(protoimpl.MaxVersion - 20)
 )
 
-var File_service_simple_bank_proto protoreflect.FileDescriptor
+var File_service_neka_pay_proto protoreflect.FileDescriptor
 
-const file_service_simple_bank_proto_rawDesc = "" +
+const file_service_neka_pay_proto_rawDesc = "" +
 	"\n" +
-	"\x19service_simple_bank.proto\x12\x02pb\x1a\x15rpc_create_user.proto\x1a\x14rpc_login_user.proto2\x8e\x01\n" +
-	"\x11SimpleBankService\x12=\n" +
+	"\x16service_neka_pay.proto\x12\x02pb\x1a\x15rpc_create_user.proto\x1a\x14rpc_login_user.proto2\x8b\x01\n" +
+	"\x0eNekaPayService\x12=\n" +
 	"\n" +
 	"CreateUser\x12\x15.pb.CreateUserRequest\x1a\x16.pb.CreateUserResponse\"\x00\x12:\n" +
 	"\tLoginUser\x12\x14.pb.LoginUserRequest\x1a\x15.pb.LoginUserResponse\"\x00B\"Z github.com/net-cyber/neka_pay/pbb\x06proto3"
 
-var file_service_simple_bank_proto_goTypes = []any{
+var file_service_neka_pay_proto_goTypes = []any{
 	(*CreateUserRequest)(nil),  // 0: pb.CreateUserRequest
 	(*LoginUserRequest)(nil),   // 1: pb.LoginUserRequest
 	(*CreateUserResponse)(nil), // 2: pb.CreateUserResponse
 	(*LoginUserResponse)(nil),  // 3: pb.LoginUserResponse
 }
-var file_service_simple_bank_proto_depIdxs = []int32{
-	0, // 0: pb.SimpleBankService.CreateUser:input_type -> pb.CreateUserRequest
-	1, // 1: pb.SimpleBankService.LoginUser:input_type -> pb.LoginUserRequest
-	2, // 2: pb.SimpleBankService.CreateUser:output_type -> pb.CreateUserResponse
-	3, // 3: pb.SimpleBankService.LoginUser:output_type -> pb.LoginUserResponse
+var file_service_neka_pay_proto_depIdxs = []int32{
+	0, // 0: pb.NekaPayService.CreateUser:input_type -> pb.CreateUserRequest
+	1, // 1: pb.NekaPayService.LoginUser:input_type -> pb.LoginUserRequest
+	2, // 2: pb.NekaPayService.CreateUser:output_type -> pb.CreateUserResponse
+	3, // 3: pb.NekaPayService.LoginUser:output_type -> pb.LoginUserResponse
 	2, // [2:4] is the sub-list for method output_type
 	0, // [0:2] is the sub-list for method input_type
 	0, // [0:0] is the sub-list for extension type_name
@@ -48,9 +48,9 @@ var file_service_simple_bank_proto_depIdxs = []int32{
 	0, // [0:0] is the sub-list for field type_name
 }
 
-func init() { file_service_simple_bank_proto_init() }
-func file_service_simple_bank_proto_init() {
-	if File_service_simple_bank_proto != nil {
+func init() { file_service_neka_pay_proto_init() }
+func file_service_neka_pay_proto_init() {
+	if File_service_neka_pay_proto != nil {
 		return
 	}
 	file_rpc_create_user_proto_init()
@@ -59,16 +59,16 @@ func file_service_simple_bank_proto_init() {
 	out := protoimpl.TypeBuilder{
 		File: protoimpl.DescBuilder{
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
-			RawDescriptor: unsafe.Slice(unsafe.StringData(file_service_simple_bank_proto_rawDesc), len(file_service_simple_bank_proto_rawDesc)),
+			RawDescriptor: unsafe.Slice(unsafe.StringData(file_service_neka_pay_proto_rawDesc), len(file_service_neka_pay_proto_rawDesc)),
 			NumEnums:      0,
 			NumMessages:   0,
 			NumExtensions: 0,
 			NumServices:   1,
 		},
-		GoTypes:           file_service_simple_bank_proto_goTypes,
-		DependencyIndexes: file_service_simple_bank_proto_depIdxs,
+		GoTypes:           file_service_neka_pay_proto_goTypes,
+		DependencyIndexes: file_service_neka_pay_proto_depIdxs,
 	}.Build()
-	File_service_simple_bank_proto = out.File
-	file_service_simple_bank_proto_goTypes = nil
-	file_service_simple_bank_proto_depIdxs = nil
+	File_service_neka_pay_proto = out.File
+	file_service_neka_pay_proto_goTypes = nil
+	file_service_neka_pay_proto_depIdxs = nil
 }
