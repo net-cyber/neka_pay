@@ -56,4 +56,11 @@ setup: postgres postgres-ready createdb migrateup
 
 clean: postgres.stop network.rm
 
-.PHONY: postgres createdb dropdb migrateup migratedown migrateup1 migratedown1 sqlc test setup server network network.rm clean
+proto:
+	rm -f pb/*.go
+	mkdir -p pb
+	protoc --proto_path=proto --go_out=pb --go_opt=paths=source_relative \
+	--go-grpc_out=pb --go-grpc_opt=paths=source_relative \
+	proto/*.proto
+
+.PHONY: postgres createdb dropdb migrateup migratedown migrateup1 migratedown1 sqlc test setup server network network.rm clean proto
