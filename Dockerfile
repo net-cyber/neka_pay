@@ -18,7 +18,7 @@ COPY wait-for.sh .
 RUN chmod +x /app/start.sh
 RUN chmod +x /app/wait-for.sh
 
-COPY db/migration ./migration
+COPY db/migration ./db/migration
 
 EXPOSE 8080
 
