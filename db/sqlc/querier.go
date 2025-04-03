@@ -12,6 +12,7 @@ import (
 
 type Querier interface {
 	AddAccountBalance(ctx context.Context, arg AddAccountBalanceParams) (Account, error)
+	CountRecentOTPAttempts(ctx context.Context, arg CountRecentOTPAttemptsParams) (int64, error)
 	CreateAccount(ctx context.Context, arg CreateAccountParams) (Account, error)
 	CreateEntry(ctx context.Context, arg CreateEntryParams) (Entry, error)
 	CreateOTPVerification(ctx context.Context, arg CreateOTPVerificationParams) (OtpVerification, error)
@@ -30,6 +31,7 @@ type Querier interface {
 	GetTransfer(ctx context.Context, id int64) (Transfer, error)
 	GetUser(ctx context.Context, username string) (User, error)
 	GetUserByPhone(ctx context.Context, internationalPhoneNumber string) (User, error)
+	InvalidatePreviousOTPs(ctx context.Context, phoneNumber string) error
 	ListAccounts(ctx context.Context, arg ListAccountsParams) ([]Account, error)
 	ListEntries(ctx context.Context, arg ListEntriesParams) ([]Entry, error)
 	ListTransfers(ctx context.Context, arg ListTransfersParams) ([]Transfer, error)
