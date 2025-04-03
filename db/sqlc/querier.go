@@ -37,6 +37,7 @@ type Querier interface {
 	ListTransfers(ctx context.Context, arg ListTransfersParams) ([]Transfer, error)
 	ListUsers(ctx context.Context, arg ListUsersParams) ([]User, error)
 	MarkOTPAsVerified(ctx context.Context, id int32) (OtpVerification, error)
+	TopUpAccount(ctx context.Context, arg TopUpAccountParams) (Account, error)
 	UpdateAccount(ctx context.Context, arg UpdateAccountParams) (Account, error)
 	UpdateEntry(ctx context.Context, arg UpdateEntryParams) (Entry, error)
 	UpdateTransfer(ctx context.Context, arg UpdateTransferParams) (Transfer, error)

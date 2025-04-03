@@ -2,6 +2,7 @@ package api
 
 import (
 	"errors"
+	"fmt"
 	"net/http"
 
 	"github.com/gin-gonic/gin"
@@ -99,4 +100,69 @@ func (server *Server) listAccounts(ctx *gin.Context) {
 	}
 
 	ctx.JSON(http.StatusOK, accounts)
+}
+
+type topUpAccountRequest struct {
+	Amount   int64  `json:"amount" binding:"required,gt=0"`
+	Currency string `json:"currency" binding:"required,currency"`
+}
+
+func (server *Server) topUpAccount(ctx *gin.Context) {
+	var req topUpAccountRequest
+	if err := ctx.ShouldBindJSON(&req); err != nil {
+		ctx.JSON(http.StatusBadRequest, errorResponse(err))
+		return
+	}
+
+	var idParam getAccountRequest
+	if err := ctx.ShouldBindUri(&idParam); err != nil {
+		ctx.JSON(http.StatusBadRequest, errorResponse(err))
+		return
+	}
+
+	// Get account to verify ownership and currency match
+	account, err := server.store.GetAccount(ctx, idParam.ID)
+	if err != nil {
+		if errors.Is(err, db.ErrRecordNotFound) {
+			ctx.JSON(http.StatusNotFound, errorResponse(err))
+			return
+		}
+		ctx.JSON(http.StatusInternalServerError, errorResponse(err))
+		return
+	}
+
+	// Verify account ownership
+	authPayload := ctx.MustGet(authorizationPayloadKey).(*token.Payload)
+	if account.Owner != authPayload.Username {
+		err := errors.New("account doesn't belong to the authenticated user")
+		ctx.JSON(http.StatusUnauthorized, errorResponse(err))
+		return
+	}
+
+	// Verify currency match
+	if account.Currency != req.Currency {
+		err := fmt.Errorf("account currency mismatch: %s vs %s", account.Currency, req.Currency)
+		ctx.JSON(http.StatusBadRequest, errorResponse(err))
+		return
+	}
+
+	// Perform top-up transaction
+	arg := db.TopUpTxParams{
+		AccountID: idParam.ID,
+		Amount:    req.Amount,
+	}
+
+	result, err := server.store.TopUpTx(ctx, arg)
+	if err != nil {
+		ctx.JSON(http.StatusInternalServerError, errorResponse(err))
+		return
+	}
+
+	// Return both the updated account and the entry record
+	response := gin.H{
+		"account": result.Account,
+		"entry":   result.Entry,
+	}
+
+	ctx.JSON(http.StatusOK, response)
 }

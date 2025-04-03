@@ -11,7 +11,9 @@ var txkey = struct{}{}
 type Store interface {
 	Querier
 	TransferTx(ctx context.Context, args TransferTxParams) (TransferTxResult, error)
+	TopUpTx(ctx context.Context, arg TopUpTxParams) (TopUpTxResult, error)
 }
+
 // store provides all functions to excute DB queries and transactions
 type SQLStore struct {
 	db *sql.DB
@@ -21,7 +23,7 @@ type SQLStore struct {
 // NewStore creates an new store
 func NewStore(db *sql.DB) *SQLStore {
 	return &SQLStore{
-		db: db,
+		db:      db,
 		Queries: New(db),
 	}
 }
@@ -40,7 +42,7 @@ func (store *SQLStore) execTx(ctx context.Context, fn func(*Queries) error) erro
 
 	if err != nil {
 		// If there was an error, attempt to rollback the transaction
-		 rbErr := tx.Rollback();
+		rbErr := tx.Rollback()
 		//  If there was an error during the rollback,
 		if rbErr != nil {
 			return fmt.Errorf("tx err: %v, rb err: %v", err, rbErr)
@@ -118,16 +120,13 @@ func (store *SQLStore) TransferTx(ctx context.Context, args TransferTxParams) (T
 			fmt.Println(txName, "get account 1 for update")
 			// TODO: update accounts balance
 			// substract form account 1
-			
+
 			fmt.Println(txName, " update account 1")
 			if args.FromAccountID < args.ToAccountID {
 				result.FromAccount, result.ToAccount, err = addMoney(ctx, q, args.FromAccountID, -args.Amount, args.ToAccountID, args.Amount)
 			} else {
 				result.ToAccount, result.FromAccount, err = addMoney(ctx, q, args.ToAccountID, args.Amount, args.FromAccountID, -args.Amount)
 			}
-			
-			
-			
 
 			return nil
 
@@ -156,4 +155,48 @@ func addMoney(
 		Amount: amount2,
 	})
 	return
+}
+
+// TopUpTxParams contains the input parameters for the TopUp transaction
+type TopUpTxParams struct {
+	AccountID int64 `json:"account_id"`
+	Amount    int64 `json:"amount"`
+}
+
+// TopUpTxResult is the result of the TopUp transaction
+type TopUpTxResult struct {
+	Account Account `json:"account"`
+	Entry   Entry   `json:"entry"`
+}
+
+// TopUpTx performs a money top-up transaction on an account
+// It creates an entry record and updates the account balance within a single database transaction
+func (store *SQLStore) TopUpTx(ctx context.Context, arg TopUpTxParams) (TopUpTxResult, error) {
+	var result TopUpTxResult
+
+	err := store.execTx(ctx, func(q *Queries) error {
+		var err error
+
+		// Get account with lock to ensure serializable isolation
+		_, err = q.GetAccountForUpdate(ctx, arg.AccountID)
+		if err != nil {
+			return err
+		}
+
+		// Create an entry record for the top-up
+		result.Entry, err = q.CreateEntry(ctx, CreateEntryParams(arg))
+		if err != nil {
+			return err
+		}
+
+		// Perform the top-up operation
+		result.Account, err = q.TopUpAccount(ctx, TopUpAccountParams{
+			ID:     arg.AccountID,
+			Amount: arg.Amount,
+		})
+
+		return err
+	})
+
+	return result, err
 }
