@@ -14,6 +14,9 @@ type Config struct {
 	TokenSymmetricKey    string        `mapstructure:"TOKEN_SYMMETRIC_KEY"`
 	AccessTokenDuration  time.Duration `mapstructure:"ACCESS_TOKEN_DURATION"`
 	RefreshTokenDuration time.Duration `mapstructure:"REFRESH_TOKEN_DURATION"`
+	AfroSMSToken         string        `mapstructure:"AFRO_SMS_TOKEN"`
+	AfroSMSIdentifierID  string        `mapstructure:"AFRO_SMS_IDENTIFIER_ID"`
+	OTPExpiryDuration    time.Duration `mapstructure:"OTP_EXPIRY_DURATION"`
 }
 
 func LoadConfig(path string) (config Config, err error) {

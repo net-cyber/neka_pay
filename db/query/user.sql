@@ -12,3 +12,8 @@ DELETE FROM users WHERE username = $1;
 
 -- name: ListUsers :many
 SELECT * FROM users ORDER BY username LIMIT $1 OFFSET $2;
+
+-- name: GetUserByPhone :one
+SELECT * FROM users
+WHERE international_phone_number = $1
+LIMIT 1;

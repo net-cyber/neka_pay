@@ -50,6 +50,11 @@ func (server *Server) setupRouter() {
 	router.POST("/users/login", server.loginUser)
 	router.POST("/tokens/renew_access", server.renewAccessToken)
 
+	// Add phone verification endpoints
+	router.POST("/verify/send", server.sendVerificationCode)
+	router.POST("/verify/resend", server.resendVerificationCode)
+	router.POST("/verify/confirm", server.verifyPhoneNumber)
+
 	authRoutes := router.Group("/").Use(authMiddleware(server.tokenMaker))
 	authRoutes.POST("/accounts", server.createAccount)
 	authRoutes.GET("/accounts/:id", server.getAccount)
