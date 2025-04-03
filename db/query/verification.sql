@@ -22,4 +22,13 @@ RETURNING *;
 -- name: UpdateUserPhoneVerified :exec
 UPDATE users
 SET phone_verified = true
-WHERE international_phone_number = $1; 
+WHERE international_phone_number = $1;
+
+-- name: InvalidatePreviousOTPs :exec
+UPDATE otp_verifications
+SET expires_at = NOW()
+WHERE phone_number = $1 AND verified = false AND expires_at > NOW();
+
+-- name: CountRecentOTPAttempts :one
+SELECT COUNT(*) FROM otp_verifications
+WHERE phone_number = $1 AND created_at > $2; 

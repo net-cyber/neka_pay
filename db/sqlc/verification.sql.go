@@ -10,6 +10,23 @@ import (
 	"time"
 )
 
+const countRecentOTPAttempts = `-- name: CountRecentOTPAttempts :one
+SELECT COUNT(*) FROM otp_verifications
+WHERE phone_number = $1 AND created_at > $2
+`
+
+type CountRecentOTPAttemptsParams struct {
+	PhoneNumber string    `json:"phone_number"`
+	CreatedAt   time.Time `json:"created_at"`
+}
+
+func (q *Queries) CountRecentOTPAttempts(ctx context.Context, arg CountRecentOTPAttemptsParams) (int64, error) {
+	row := q.db.QueryRowContext(ctx, countRecentOTPAttempts, arg.PhoneNumber, arg.CreatedAt)
+	var count int64
+	err := row.Scan(&count)
+	return count, err
+}
+
 const createOTPVerification = `-- name: CreateOTPVerification :one
 INSERT INTO otp_verifications (
     phone_number, 
@@ -59,6 +76,17 @@ func (q *Queries) GetLatestOTPVerification(ctx context.Context, phoneNumber stri
 		&i.CreatedAt,
 	)
 	return i, err
+}
+
+const invalidatePreviousOTPs = `-- name: InvalidatePreviousOTPs :exec
+UPDATE otp_verifications
+SET expires_at = NOW()
+WHERE phone_number = $1 AND verified = false AND expires_at > NOW()
+`
+
+func (q *Queries) InvalidatePreviousOTPs(ctx context.Context, phoneNumber string) error {
+	_, err := q.db.ExecContext(ctx, invalidatePreviousOTPs, phoneNumber)
+	return err
 }
 
 const markOTPAsVerified = `-- name: MarkOTPAsVerified :one

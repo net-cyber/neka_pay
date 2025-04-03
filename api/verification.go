@@ -65,6 +65,24 @@ func (server *Server) sendVerificationCode(ctx *gin.Context) {
 		})
 		return
 	}
+		// Check if there were too many recent attempts
+		recentAttempts, err := server.store.CountRecentOTPAttempts(ctx, db.CountRecentOTPAttemptsParams{
+			PhoneNumber: req.PhoneNumber,
+			CreatedAt:       time.Now().Add(-1 * time.Hour), // Check attempts in the last hour
+		})
+		if err != nil {
+			logrus.WithError(err).Error("Failed to count recent OTP attempts")
+			ctx.JSON(http.StatusInternalServerError, errorResponse(err))
+			return
+		}
+	
+		if recentAttempts > 5 { // Limit to 5 attempts per hour
+			ctx.JSON(http.StatusTooManyRequests, gin.H{
+				"success": false,
+				"message": "Too many verification attempts. Please try again later.",
+			})
+			return
+		}
 
 	// Generate OTP
 	otp := sms.GenerateOTP()
@@ -238,6 +256,25 @@ func (server *Server) resendVerificationCode(ctx *gin.Context) {
 		return
 	}
 
+	// Check if there were too many recent attempts
+	recentAttempts, err := server.store.CountRecentOTPAttempts(ctx, db.CountRecentOTPAttemptsParams{
+		PhoneNumber: req.PhoneNumber,
+		CreatedAt:       time.Now().Add(-1 * time.Hour), // Check attempts in the last hour
+	})
+	if err != nil {
+		logrus.WithError(err).Error("Failed to count recent OTP attempts")
+		ctx.JSON(http.StatusInternalServerError, errorResponse(err))
+		return
+	}
+
+	if recentAttempts > 5 { // Limit to 5 attempts per hour
+		ctx.JSON(http.StatusTooManyRequests, gin.H{
+			"success": false,
+			"message": "Too many verification attempts. Please try again later.",
+		})
+		return
+	}
+
 	// Generate new OTP
 	otp := sms.GenerateOTP()
 	expiresAt := time.Now().Add(server.config.OTPExpiryDuration)
@@ -263,6 +300,13 @@ func (server *Server) resendVerificationCode(ctx *gin.Context) {
 		logrus.WithError(err).Error("Failed to send SMS verification code")
 		ctx.JSON(http.StatusInternalServerError, errorResponse(err))
 		return
+	}
+
+	// Invalidate previous OTPs
+	err = server.store.InvalidatePreviousOTPs(ctx, req.PhoneNumber)
+	if err != nil {
+		logrus.WithError(err).Error("Failed to invalidate previous OTPs")
+		// Continue anyway, as this is not critical
 	}
 
 	logrus.WithFields(logrus.Fields{
