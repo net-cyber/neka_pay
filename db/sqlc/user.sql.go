@@ -10,7 +10,7 @@ import (
 )
 
 const createUser = `-- name: CreateUser :one
-INSERT INTO users (username, hashed_password, full_name, international_phone_number) VALUES ($1, $2, $3, $4) RETURNING username, hashed_password, full_name, international_phone_number, password_changed_at, created_at
+INSERT INTO users (username, hashed_password, full_name, international_phone_number) VALUES ($1, $2, $3, $4) RETURNING username, hashed_password, full_name, international_phone_number, password_changed_at, created_at, phone_verified
 `
 
 type CreateUserParams struct {
@@ -35,6 +35,7 @@ func (q *Queries) CreateUser(ctx context.Context, arg CreateUserParams) (User, e
 		&i.InternationalPhoneNumber,
 		&i.PasswordChangedAt,
 		&i.CreatedAt,
+		&i.PhoneVerified,
 	)
 	return i, err
 }
@@ -49,7 +50,7 @@ func (q *Queries) DeleteUser(ctx context.Context, username string) error {
 }
 
 const getUser = `-- name: GetUser :one
-SELECT username, hashed_password, full_name, international_phone_number, password_changed_at, created_at FROM users WHERE username = $1 LIMIT 1
+SELECT username, hashed_password, full_name, international_phone_number, password_changed_at, created_at, phone_verified FROM users WHERE username = $1 LIMIT 1
 `
 
 func (q *Queries) GetUser(ctx context.Context, username string) (User, error) {
@@ -62,12 +63,34 @@ func (q *Queries) GetUser(ctx context.Context, username string) (User, error) {
 		&i.InternationalPhoneNumber,
 		&i.PasswordChangedAt,
 		&i.CreatedAt,
+		&i.PhoneVerified,
+	)
+	return i, err
+}
+
+const getUserByPhone = `-- name: GetUserByPhone :one
+SELECT username, hashed_password, full_name, international_phone_number, password_changed_at, created_at, phone_verified FROM users
+WHERE international_phone_number = $1
+LIMIT 1
+`
+
+func (q *Queries) GetUserByPhone(ctx context.Context, internationalPhoneNumber string) (User, error) {
+	row := q.db.QueryRowContext(ctx, getUserByPhone, internationalPhoneNumber)
+	var i User
+	err := row.Scan(
+		&i.Username,
+		&i.HashedPassword,
+		&i.FullName,
+		&i.InternationalPhoneNumber,
+		&i.PasswordChangedAt,
+		&i.CreatedAt,
+		&i.PhoneVerified,
 	)
 	return i, err
 }
 
 const listUsers = `-- name: ListUsers :many
-SELECT username, hashed_password, full_name, international_phone_number, password_changed_at, created_at FROM users ORDER BY username LIMIT $1 OFFSET $2
+SELECT username, hashed_password, full_name, international_phone_number, password_changed_at, created_at, phone_verified FROM users ORDER BY username LIMIT $1 OFFSET $2
 `
 
 type ListUsersParams struct {
@@ -91,6 +114,7 @@ func (q *Queries) ListUsers(ctx context.Context, arg ListUsersParams) ([]User, e
 			&i.InternationalPhoneNumber,
 			&i.PasswordChangedAt,
 			&i.CreatedAt,
+			&i.PhoneVerified,
 		); err != nil {
 			return nil, err
 		}
@@ -106,7 +130,7 @@ func (q *Queries) ListUsers(ctx context.Context, arg ListUsersParams) ([]User, e
 }
 
 const updateUser = `-- name: UpdateUser :one
-UPDATE users SET hashed_password = $2, full_name = $3, international_phone_number = $4 WHERE username = $1 RETURNING username, hashed_password, full_name, international_phone_number, password_changed_at, created_at
+UPDATE users SET hashed_password = $2, full_name = $3, international_phone_number = $4 WHERE username = $1 RETURNING username, hashed_password, full_name, international_phone_number, password_changed_at, created_at, phone_verified
 `
 
 type UpdateUserParams struct {
@@ -131,6 +155,7 @@ func (q *Queries) UpdateUser(ctx context.Context, arg UpdateUserParams) (User, e
 		&i.InternationalPhoneNumber,
 		&i.PasswordChangedAt,
 		&i.CreatedAt,
+		&i.PhoneVerified,
 	)
 	return i, err
 }

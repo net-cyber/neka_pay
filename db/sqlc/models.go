@@ -26,6 +26,15 @@ type Entry struct {
 	CreatedAt time.Time `json:"created_at"`
 }
 
+type OtpVerification struct {
+	ID          int32     `json:"id"`
+	PhoneNumber string    `json:"phone_number"`
+	Otp         string    `json:"otp"`
+	ExpiresAt   time.Time `json:"expires_at"`
+	Verified    bool      `json:"verified"`
+	CreatedAt   time.Time `json:"created_at"`
+}
+
 type Session struct {
 	ID           uuid.UUID `json:"id"`
 	Username     string    `json:"username"`
@@ -53,4 +62,5 @@ type User struct {
 	InternationalPhoneNumber string    `json:"international_phone_number"`
 	PasswordChangedAt        time.Time `json:"password_changed_at"`
 	CreatedAt                time.Time `json:"created_at"`
+	PhoneVerified            bool      `json:"phone_verified"`
 }
