@@ -165,17 +165,20 @@ type TopUpTxParams struct {
 
 // TopUpTxResult is the result of the TopUp transaction
 type TopUpTxResult struct {
-	Account Account `json:"account"`
-	Entry   Entry   `json:"entry"`
+	Transfer Transfer `json:"transfer"`
+	Account  Account  `json:"account"`
+	Entry    Entry    `json:"entry"`
 }
 
 // TopUpTx performs a money top-up transaction on an account
-// It creates an entry record and updates the account balance within a single database transaction
+// It creates a transfer record, an entry record, and updates the account balance within a single transaction
 func (store *SQLStore) TopUpTx(ctx context.Context, arg TopUpTxParams) (TopUpTxResult, error) {
 	var result TopUpTxResult
 
 	err := store.execTx(ctx, func(q *Queries) error {
 		var err error
+
+		txName := ctx.Value(txkey)
 
 		// Get account with lock to ensure serializable isolation
 		_, err = q.GetAccountForUpdate(ctx, arg.AccountID)
@@ -183,13 +186,27 @@ func (store *SQLStore) TopUpTx(ctx context.Context, arg TopUpTxParams) (TopUpTxR
 			return err
 		}
 
+		// Create a transfer record for the top-up (using 0 as FromAccountID to indicate external source)
+		fmt.Println(txName, "Create transfer")
+		transfer, err := q.CreateTransfer(ctx, CreateTransferParams{
+			FromAccountID: 0, // 0 means external funding source
+			ToAccountID:   arg.AccountID,
+			Amount:        arg.Amount,
+		})
+		if err != nil {
+			return err
+		}
+		result.Transfer = transfer
+
 		// Create an entry record for the top-up
+		fmt.Println(txName, "Create Entry")
 		result.Entry, err = q.CreateEntry(ctx, CreateEntryParams(arg))
 		if err != nil {
 			return err
 		}
 
 		// Perform the top-up operation
+		fmt.Println(txName, "Update Account")
 		result.Account, err = q.TopUpAccount(ctx, TopUpAccountParams{
 			ID:     arg.AccountID,
 			Amount: arg.Amount,
