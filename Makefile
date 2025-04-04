@@ -9,8 +9,18 @@ postgres.stop:
 	sudo docker stop postgres-go || true
 	sudo docker rm postgres-go || true
 
-postgres: postgres.stop
-	sudo docker run --name postgres-go --network neka_pay_network -p 5432:5432 -e POSTGRES_USER=root -e POSTGRES_PASSWORD=secret -d postgres:14-alpine
+# Create a named volume for data persistence
+postgres-volume:
+	sudo docker volume create neka_pay_postgres_data || true
+
+# Use the persistent volume when creating the container
+postgres: postgres.stop postgres-volume
+	sudo docker run --name postgres-go --network neka_pay_network \
+		-p 5432:5432 \
+		-e POSTGRES_USER=root \
+		-e POSTGRES_PASSWORD=secret \
+		-v neka_pay_postgres_data:/var/lib/postgresql/data \
+		-d postgres:14-alpine
 
 createdb:
 	sudo docker exec -it postgres-go createdb --username=root --owner=root neka_pay
