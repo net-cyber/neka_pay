@@ -186,18 +186,6 @@ func (store *SQLStore) TopUpTx(ctx context.Context, arg TopUpTxParams) (TopUpTxR
 			return err
 		}
 
-		// Create a transfer record for the top-up (using 0 as FromAccountID to indicate external source)
-		fmt.Println(txName, "Create transfer")
-		transfer, err := q.CreateTransfer(ctx, CreateTransferParams{
-			FromAccountID: 0, // 0 means external funding source
-			ToAccountID:   arg.AccountID,
-			Amount:        arg.Amount,
-		})
-		if err != nil {
-			return err
-		}
-		result.Transfer = transfer
-
 		// Create an entry record for the top-up
 		fmt.Println(txName, "Create Entry")
 		result.Entry, err = q.CreateEntry(ctx, CreateEntryParams(arg))
