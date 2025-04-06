@@ -123,6 +123,55 @@ func (server *Server) getAccount(ctx *gin.Context) {
 	ctx.JSON(http.StatusOK, account)
 }
 
+type validateUserAccountBalanceRequest struct {
+	Amount    int64 `json:"amount" binding:"required,gt=0"`
+	AccountID int64 `json:"account_id" binding:"required,min=1"`
+}
+
+func (server *Server) validateUserAccountBalance(ctx *gin.Context) {
+	var req validateUserAccountBalanceRequest
+	if err := ctx.ShouldBindJSON(&req); err != nil {
+		ctx.JSON(http.StatusBadRequest, errorResponse(err))
+		return
+	}
+	// check if account exists
+	account, err := server.store.GetAccount(ctx, req.AccountID)
+	if err != nil {
+		if errors.Is(err, db.ErrRecordNotFound) {
+			ctx.JSON(http.StatusNotFound, errorResponse(err))
+			return
+		}
+
+		ctx.JSON(http.StatusInternalServerError, errorResponse(err))
+		return
+	}
+
+	// check if account belongs to the authenticated user
+	authPayload := ctx.MustGet(authorizationPayloadKey).(*token.Payload)
+	if account.Owner != authPayload.Username {
+		err := errors.New("account doesn't belong to the authenticated user")
+		ctx.JSON(http.StatusUnauthorized, errorResponse(err))
+		return
+	}
+
+	// check if account balance is sufficient
+	if account.Balance < req.Amount {
+		err := errors.New("account balance is less than the amount")
+		ctx.JSON(http.StatusBadRequest, errorResponse(err))
+		return
+	}
+	// check if remaining balance is less than 50
+	if account.Balance < (req.Amount + 50) {
+		err := errors.New("Remaining balance should be more than 50")
+		ctx.JSON(http.StatusBadRequest, errorResponse(err))
+		return
+	}
+
+	ctx.JSON(http.StatusOK, gin.H{
+		"message": "Account balance is sufficient",
+	})
+}
+
 type listAccountRequest struct {
 	PageID   int32 `form:"page_id" binding:"required,min=1"`
 	PageSize int32 `form:"page_size" binding:"required,min=5,max=10"`

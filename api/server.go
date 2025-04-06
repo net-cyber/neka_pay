@@ -72,6 +72,7 @@ func (server *Server) setupRouter() {
 	authRoutes.GET("/accounts", server.listAccounts)
 
 	authRoutes.POST("/transfers", server.CreateTransfer)
+	authRoutes.GET("/accounts/validate", server.validateUserAccountBalance)
 	authRoutes.POST("/accounts/:id/topup", server.topUpAccount)
 
 	// Add financial institution routes - now all under regular auth routes
