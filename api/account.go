@@ -46,6 +46,55 @@ type getAccountRequest struct {
 	ID int64 `uri:"id" binding:"required,min=1"`
 }
 
+type getAccountForVerificationRequest struct {
+	ID int64 `uri:"id" binding:"required,min=1"`
+}
+
+type getAccountForVerificationResponse struct {
+	FullName string `json:"full_name"`
+}
+
+func (server *Server) getAccountForVerification(ctx *gin.Context) {
+	var req getAccountForVerificationRequest
+	if err := ctx.ShouldBindUri(&req); err != nil {
+		ctx.JSON(http.StatusBadRequest, errorResponse(err))
+		return
+	}
+
+	account, err := server.store.GetAccount(ctx, req.ID)
+	if err != nil {
+		if errors.Is(err, db.ErrRecordNotFound) {
+			ctx.JSON(http.StatusNotFound, errorResponse(err))
+			return
+		}
+
+		ctx.JSON(http.StatusInternalServerError, errorResponse(err))
+		return
+	}
+
+	authPayload := ctx.MustGet(authorizationPayloadKey).(*token.Payload)
+	if account.Owner == authPayload.Username {
+		err := errors.New("You cannot send to yourself")
+		ctx.JSON(http.StatusUnauthorized, errorResponse(err))
+		return
+	}
+
+	user, err := server.store.GetUser(ctx, account.Owner)
+	if err != nil {
+		if errors.Is(err, db.ErrRecordNotFound) {
+			ctx.JSON(http.StatusNotFound, errorResponse(err))
+			return
+		}
+
+		ctx.JSON(http.StatusInternalServerError, errorResponse(err))
+		return
+	}
+
+	ctx.JSON(http.StatusOK, getAccountForVerificationResponse{
+		FullName: user.FullName,
+	})
+}
+
 func (server *Server) getAccount(ctx *gin.Context) {
 	var req getAccountRequest
 	if err := ctx.ShouldBindUri(&req); err != nil {

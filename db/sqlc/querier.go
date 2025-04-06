@@ -15,17 +15,21 @@ type Querier interface {
 	CountRecentOTPAttempts(ctx context.Context, arg CountRecentOTPAttemptsParams) (int64, error)
 	CreateAccount(ctx context.Context, arg CreateAccountParams) (Account, error)
 	CreateEntry(ctx context.Context, arg CreateEntryParams) (Entry, error)
+	CreateFinancialInstitution(ctx context.Context, arg CreateFinancialInstitutionParams) (FinancialInstitution, error)
 	CreateOTPVerification(ctx context.Context, arg CreateOTPVerificationParams) (OtpVerification, error)
 	CreateSession(ctx context.Context, arg CreateSessionParams) (Session, error)
 	CreateTransfer(ctx context.Context, arg CreateTransferParams) (Transfer, error)
 	CreateUser(ctx context.Context, arg CreateUserParams) (User, error)
 	DeleteAccount(ctx context.Context, id int64) error
 	DeleteEntry(ctx context.Context, id int64) error
+	DeleteFinancialInstitution(ctx context.Context, id int64) error
 	DeleteTransfer(ctx context.Context, id int64) error
 	DeleteUser(ctx context.Context, username string) error
 	GetAccount(ctx context.Context, id int64) (Account, error)
 	GetAccountForUpdate(ctx context.Context, id int64) (Account, error)
 	GetEntry(ctx context.Context, id int64) (Entry, error)
+	GetFinancialInstitution(ctx context.Context, id int64) (FinancialInstitution, error)
+	GetFinancialInstitutionByCode(ctx context.Context, code string) (FinancialInstitution, error)
 	GetLatestOTPVerification(ctx context.Context, phoneNumber string) (OtpVerification, error)
 	GetSession(ctx context.Context, id uuid.UUID) (Session, error)
 	GetTransfer(ctx context.Context, id int64) (Transfer, error)
@@ -34,12 +38,14 @@ type Querier interface {
 	InvalidatePreviousOTPs(ctx context.Context, phoneNumber string) error
 	ListAccounts(ctx context.Context, arg ListAccountsParams) ([]Account, error)
 	ListEntries(ctx context.Context, arg ListEntriesParams) ([]Entry, error)
+	ListFinancialInstitutions(ctx context.Context, arg ListFinancialInstitutionsParams) ([]FinancialInstitution, error)
 	ListTransfers(ctx context.Context, arg ListTransfersParams) ([]Transfer, error)
 	ListUsers(ctx context.Context, arg ListUsersParams) ([]User, error)
 	MarkOTPAsVerified(ctx context.Context, id int32) (OtpVerification, error)
 	TopUpAccount(ctx context.Context, arg TopUpAccountParams) (Account, error)
 	UpdateAccount(ctx context.Context, arg UpdateAccountParams) (Account, error)
 	UpdateEntry(ctx context.Context, arg UpdateEntryParams) (Entry, error)
+	UpdateFinancialInstitution(ctx context.Context, arg UpdateFinancialInstitutionParams) (FinancialInstitution, error)
 	UpdateTransfer(ctx context.Context, arg UpdateTransferParams) (Transfer, error)
 	UpdateUser(ctx context.Context, arg UpdateUserParams) (User, error)
 	UpdateUserPhoneVerified(ctx context.Context, internationalPhoneNumber string) error

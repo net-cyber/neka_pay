@@ -1,0 +1,14 @@
+                List of relations
+ Schema |          Name          | Type  | Owner 
+--------+------------------------+-------+-------
+ public | accounts               | table | root
+ public | banks                  | table | root
+ public | entries                | table | root
+ public | financial_institutions | table | root
+ public | otp_verifications      | table | root
+ public | schema_migrations      | table | root
+ public | sessions               | table | root
+ public | transfers              | table | root
+ public | users                  | table | root
+(9 rows)
+

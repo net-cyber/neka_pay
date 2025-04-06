@@ -5,10 +5,55 @@
 package db
 
 import (
+	"database/sql/driver"
+	"fmt"
 	"time"
 
 	"github.com/google/uuid"
 )
+
+type FinancialInstitutionType string
+
+const (
+	FinancialInstitutionTypeBank   FinancialInstitutionType = "bank"
+	FinancialInstitutionTypeWallet FinancialInstitutionType = "wallet"
+	FinancialInstitutionTypeMfi    FinancialInstitutionType = "mfi"
+)
+
+func (e *FinancialInstitutionType) Scan(src interface{}) error {
+	switch s := src.(type) {
+	case []byte:
+		*e = FinancialInstitutionType(s)
+	case string:
+		*e = FinancialInstitutionType(s)
+	default:
+		return fmt.Errorf("unsupported scan type for FinancialInstitutionType: %T", src)
+	}
+	return nil
+}
+
+type NullFinancialInstitutionType struct {
+	FinancialInstitutionType FinancialInstitutionType `json:"financial_institution_type"`
+	Valid                    bool                     `json:"valid"` // Valid is true if FinancialInstitutionType is not NULL
+}
+
+// Scan implements the Scanner interface.
+func (ns *NullFinancialInstitutionType) Scan(value interface{}) error {
+	if value == nil {
+		ns.FinancialInstitutionType, ns.Valid = "", false
+		return nil
+	}
+	ns.Valid = true
+	return ns.FinancialInstitutionType.Scan(value)
+}
+
+// Value implements the driver Valuer interface.
+func (ns NullFinancialInstitutionType) Value() (driver.Value, error) {
+	if !ns.Valid {
+		return nil, nil
+	}
+	return string(ns.FinancialInstitutionType), nil
+}
 
 type Account struct {
 	ID        int64     `json:"id"`
@@ -24,6 +69,16 @@ type Entry struct {
 	// can be negative or positive
 	Amount    int64     `json:"amount"`
 	CreatedAt time.Time `json:"created_at"`
+}
+
+type FinancialInstitution struct {
+	ID        int64                    `json:"id"`
+	Name      string                   `json:"name"`
+	Type      FinancialInstitutionType `json:"type"`
+	LogoUrl   string                   `json:"logo_url"`
+	Code      string                   `json:"code"`
+	Active    bool                     `json:"active"`
+	CreatedAt time.Time                `json:"created_at"`
 }
 
 type OtpVerification struct {
