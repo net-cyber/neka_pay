@@ -104,8 +104,6 @@ func (server *Server) getFinancialInstitution(ctx *gin.Context) {
 }
 
 type listFinancialInstitutionsRequest struct {
-	Type     string `form:"type"`
-	Active   *bool  `form:"active"`
 	PageID   int32  `form:"page_id" binding:"required,min=1"`
 	PageSize int32  `form:"page_size" binding:"required,min=5,max=100"`
 }
@@ -117,27 +115,10 @@ func (server *Server) listFinancialInstitutions(ctx *gin.Context) {
 		return
 	}
 
-	// Create proper NullFinancialInstitutionType
-	var typeParam db.NullFinancialInstitutionType
-	if req.Type != "" {
-		typeParam = db.NullFinancialInstitutionType{
-			FinancialInstitutionType: db.FinancialInstitutionType(req.Type),
-			Valid:                    true,
-		}
-	}
 
-	// Create proper sql.NullBool
-	var activeParam sql.NullBool
-	if req.Active != nil {
-		activeParam = sql.NullBool{
-			Bool:  *req.Active,
-			Valid: true,
-		}
-	}
+
 
 	arg := db.ListFinancialInstitutionsParams{
-		Type:   typeParam,
-		Active: activeParam,
 		Limit:  req.PageSize,
 		Offset: (req.PageID - 1) * req.PageSize,
 	}
