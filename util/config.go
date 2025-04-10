@@ -18,6 +18,7 @@ type Config struct {
 	AfroSMSIdentifierID  string        `mapstructure:"AFRO_SMS_IDENTIFIER_ID"`
 	OTPExpiryDuration    time.Duration `mapstructure:"OTP_EXPIRY_DURATION"`
 	CloudinaryURL        string        `mapstructure:"CLOUDINARY_URL"`
+	DatabaseURL          string        `mapstructure:"DATABASE_URL"`
 }
 
 func LoadConfig(path string) (config Config, err error) {
