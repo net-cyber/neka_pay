@@ -21,13 +21,18 @@ func main() {
 		log.Fatal("cannot load config", err)
 	}
 
-	conn, err := sql.Open(config.DBDriver, config.DBSource)
+	dbSource := config.DBSource
+	if os.Getenv("DB_SOURCE") != "" {
+		dbSource = os.Getenv("DB_SOURCE")
+	}
+
+	conn, err := sql.Open(config.DBDriver, dbSource)
 	if err != nil {
 		log.Fatal("cannot connect to db:", err)
 	}
 
 	// run db migration
-	runDBMigration(config.MigrationURL, config.DBSource)
+	runDBMigration(config.MigrationURL, dbSource)
 
 	store := db.NewStore(conn)
 	server, err := api.NewServer(config, store)
