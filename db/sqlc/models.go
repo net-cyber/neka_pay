@@ -5,6 +5,7 @@
 package db
 
 import (
+	"database/sql"
 	"database/sql/driver"
 	"fmt"
 	"time"
@@ -69,6 +70,26 @@ type Entry struct {
 	// can be negative or positive
 	Amount    int64     `json:"amount"`
 	CreatedAt time.Time `json:"created_at"`
+}
+
+type ExternalTransfer struct {
+	ID              int64  `json:"id"`
+	FromAccountID   int64  `json:"from_account_id"`
+	ToBankCode      string `json:"to_bank_code"`
+	ToAccountNumber string `json:"to_account_number"`
+	RecipientName   string `json:"recipient_name"`
+	// must be positive
+	Amount   int64  `json:"amount"`
+	Currency string `json:"currency"`
+	// pending, processing, completed, failed
+	Status          string         `json:"status"`
+	Reference       string         `json:"reference"`
+	Description     sql.NullString `json:"description"`
+	TransactionID   sql.NullString `json:"transaction_id"`
+	TransactionFees sql.NullInt64  `json:"transaction_fees"`
+	ErrorMessage    sql.NullString `json:"error_message"`
+	CreatedAt       time.Time      `json:"created_at"`
+	UpdatedAt       time.Time      `json:"updated_at"`
 }
 
 type FinancialInstitution struct {

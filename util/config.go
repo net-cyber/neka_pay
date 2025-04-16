@@ -19,6 +19,17 @@ type Config struct {
 	OTPExpiryDuration    time.Duration `mapstructure:"OTP_EXPIRY_DURATION"`
 	CloudinaryURL        string        `mapstructure:"CLOUDINARY_URL"`
 	DatabaseURL          string        `mapstructure:"DATABASE_URL"`
+
+	// Bank API configurations
+	SampleBankAPIURL     string `mapstructure:"SAMPLE_BANK_API_URL"`
+	SampleBankAPIKey     string `mapstructure:"SAMPLE_BANK_API_KEY"`
+	SampleBankAPISecret  string `mapstructure:"SAMPLE_BANK_API_SECRET"`
+	SampleBankMerchantID string `mapstructure:"SAMPLE_BANK_MERCHANT_ID"`
+
+	// CBE Bank API configuration
+	CBEBankAPIURL    string `mapstructure:"CBE_BANK_API_URL"`
+	CBEBankAPIKey    string `mapstructure:"CBE_BANK_API_KEY"`
+	CBEBankAPISecret string `mapstructure:"CBE_BANK_API_SECRET"`
 }
 
 func LoadConfig(path string) (config Config, err error) {

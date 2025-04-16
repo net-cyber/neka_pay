@@ -11,16 +11,18 @@ import (
 	db "github.com/net-cyber/neka_pay/db/sqlc"
 	"github.com/net-cyber/neka_pay/token"
 	"github.com/net-cyber/neka_pay/util"
+	"github.com/net-cyber/neka_pay/util/bankapi"
 	"github.com/prometheus/client_golang/prometheus/promhttp"
 )
 
 // this server will serves HTTP requests for our banking system
 type Server struct {
-	config     util.Config
-	store      db.Store
-	tokenMaker token.Maker
-	router     *gin.Engine
-	cloudinary *util.CloudinaryService
+	config          util.Config
+	store           db.Store
+	tokenMaker      token.Maker
+	router          *gin.Engine
+	cloudinary      *util.CloudinaryService
+	bankAPIProvider *bankapi.BankAPIProvider
 }
 
 // NewServer will create a new HTTP server and set up routing
@@ -36,11 +38,36 @@ func NewServer(config util.Config, store db.Store) (*Server, error) {
 		return nil, fmt.Errorf("cannot initialize cloudinary: %w", err)
 	}
 
+	// Initialize the Bank API provider
+	bankAPIProvider := bankapi.NewBankAPIProvider()
+
+	// Register supported banks
+	if config.SampleBankAPIURL != "" {
+		sampleBankConfig := bankapi.SampleBankConfig{
+			APIURL:     config.SampleBankAPIURL,
+			APIKey:     config.SampleBankAPIKey,
+			APISecret:  config.SampleBankAPISecret,
+			MerchantID: config.SampleBankMerchantID,
+		}
+		sampleBankAPI := bankapi.NewSampleBankAPI(sampleBankConfig)
+		bankAPIProvider.RegisterBank("SAMPLE", sampleBankAPI)
+	}
+
+	// Register CBE Bank API with mock data
+	cbeConfig := bankapi.CBEBankConfig{
+		APIURL:    config.CBEBankAPIURL,
+		APIKey:    config.CBEBankAPIKey,
+		APISecret: config.CBEBankAPISecret,
+	}
+	cbeAPI := bankapi.NewCBEBankAPI(cbeConfig)
+	bankAPIProvider.RegisterBank("CBE", cbeAPI)
+
 	server := &Server{
-		config:     config,
-		store:      store,
-		tokenMaker: tokenMaker,
-		cloudinary: cloudinary,
+		config:          config,
+		store:           store,
+		tokenMaker:      tokenMaker,
+		cloudinary:      cloudinary,
+		bankAPIProvider: bankAPIProvider,
 	}
 
 	if v, ok := binding.Validator.Engine().(*validator.Validate); ok {
@@ -74,6 +101,12 @@ func (server *Server) setupRouter() {
 	authRoutes.POST("/transfers", server.CreateTransfer)
 	authRoutes.GET("/accounts/validate", server.validateUserAccountBalance)
 	authRoutes.POST("/accounts/:id/topup", server.topUpAccount)
+
+	// Add external bank transfer routes
+	authRoutes.POST("/external-transfers", server.CreateExternalTransfer)
+	authRoutes.GET("/external-transfers/:id", server.GetExternalTransfer)
+	authRoutes.GET("/external-transfers", server.ListExternalTransfers)
+	authRoutes.POST("/bank-accounts/lookup", server.LookupBankAccount)
 
 	// Add financial institution routes - now all under regular auth routes
 	authRoutes.GET("/financial-institutions", server.listFinancialInstitutions)
