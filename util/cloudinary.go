@@ -25,16 +25,16 @@ func NewCloudinaryService(cloudURL string) (*CloudinaryService, error) {
 }
 
 // UploadLogo uploads a financial institution logo to Cloudinary
-func (s *CloudinaryService) UploadLogo(ctx context.Context, file multipart.File, fileHeader *multipart.FileHeader, fiCode string) (string, error) {
+func (s *CloudinaryService) UploadLogo(ctx context.Context, file multipart.File, fileHeader *multipart.FileHeader, fiCode string, category string) (string, error) {
 	// Create a unique public ID based on the financial institution code
-	publicID := fmt.Sprintf("financial_institutions/%s_%d", fiCode, time.Now().Unix())
+	publicID := fmt.Sprintf("%s/%s_%d", category, fiCode, time.Now().Unix())
 
 	// Set upload parameters
 	uploadParams := uploader.UploadParams{
 		PublicID:     publicID,
 		ResourceType: "image",
-		Folder:       "financial_institutions",
-		Tags:         []string{"financial_institution", fiCode},
+		Folder:       category,
+		Tags:         []string{category, fiCode},
 	}
 
 	// Upload the file to Cloudinary

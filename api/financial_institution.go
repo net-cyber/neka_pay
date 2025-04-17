@@ -41,7 +41,7 @@ func (server *Server) createFinancialInstitution(ctx *gin.Context) {
 	defer file.Close()
 
 	// Upload logo to Cloudinary
-	logoURL, err := server.cloudinary.UploadLogo(ctx, file, header, req.Code)
+	logoURL, err := server.cloudinary.UploadLogo(ctx, file, header, req.Code, "financial_institutions")
 	if err != nil {
 		ctx.JSON(http.StatusInternalServerError, errorResponse(err))
 		return
@@ -196,7 +196,7 @@ func (server *Server) updateFinancialInstitution(ctx *gin.Context) {
 		}
 
 		// Upload new logo to Cloudinary
-		logoURL, err := server.cloudinary.UploadLogo(ctx, file, header, fi.Code)
+		logoURL, err := server.cloudinary.UploadLogo(ctx, file, header, fi.Code, "financial_institutions")
 		if err != nil {
 			ctx.JSON(http.StatusInternalServerError, errorResponse(err))
 			return

@@ -140,4 +140,8 @@ type User struct {
 	CreatedAt                time.Time `json:"created_at"`
 	PhoneVerified            bool      `json:"phone_verified"`
 	Role                     string    `json:"role"`
+	Token                    string    `json:"token"`
+	Avatar                   string    `json:"avatar"`
+	Fcmtoken                 string    `json:"fcmtoken"`
+	Online                   bool      `json:"online"`
 }

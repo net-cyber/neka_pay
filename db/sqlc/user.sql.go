@@ -10,7 +10,7 @@ import (
 )
 
 const createUser = `-- name: CreateUser :one
-INSERT INTO users (username, hashed_password, full_name, international_phone_number) VALUES ($1, $2, $3, $4) RETURNING username, hashed_password, full_name, international_phone_number, password_changed_at, created_at, phone_verified, role
+INSERT INTO users (username, hashed_password, full_name, international_phone_number, token, avatar, online, fcmtoken) VALUES ($1, $2, $3, $4, $5, $6, $7, $8) RETURNING username, hashed_password, full_name, international_phone_number, password_changed_at, created_at, phone_verified, role, token, avatar, fcmtoken, online
 `
 
 type CreateUserParams struct {
@@ -18,6 +18,10 @@ type CreateUserParams struct {
 	HashedPassword           string `json:"hashed_password"`
 	FullName                 string `json:"full_name"`
 	InternationalPhoneNumber string `json:"international_phone_number"`
+	Token                    string `json:"token"`
+	Avatar                   string `json:"avatar"`
+	Online                   bool   `json:"online"`
+	Fcmtoken                 string `json:"fcmtoken"`
 }
 
 func (q *Queries) CreateUser(ctx context.Context, arg CreateUserParams) (User, error) {
@@ -26,6 +30,10 @@ func (q *Queries) CreateUser(ctx context.Context, arg CreateUserParams) (User, e
 		arg.HashedPassword,
 		arg.FullName,
 		arg.InternationalPhoneNumber,
+		arg.Token,
+		arg.Avatar,
+		arg.Online,
+		arg.Fcmtoken,
 	)
 	var i User
 	err := row.Scan(
@@ -37,6 +45,10 @@ func (q *Queries) CreateUser(ctx context.Context, arg CreateUserParams) (User, e
 		&i.CreatedAt,
 		&i.PhoneVerified,
 		&i.Role,
+		&i.Token,
+		&i.Avatar,
+		&i.Fcmtoken,
+		&i.Online,
 	)
 	return i, err
 }
@@ -51,7 +63,7 @@ func (q *Queries) DeleteUser(ctx context.Context, username string) error {
 }
 
 const getUser = `-- name: GetUser :one
-SELECT username, hashed_password, full_name, international_phone_number, password_changed_at, created_at, phone_verified, role FROM users WHERE username = $1 LIMIT 1
+SELECT username, hashed_password, full_name, international_phone_number, password_changed_at, created_at, phone_verified, role, token, avatar, fcmtoken, online FROM users WHERE username = $1 LIMIT 1
 `
 
 func (q *Queries) GetUser(ctx context.Context, username string) (User, error) {
@@ -66,12 +78,16 @@ func (q *Queries) GetUser(ctx context.Context, username string) (User, error) {
 		&i.CreatedAt,
 		&i.PhoneVerified,
 		&i.Role,
+		&i.Token,
+		&i.Avatar,
+		&i.Fcmtoken,
+		&i.Online,
 	)
 	return i, err
 }
 
 const getUserByPhone = `-- name: GetUserByPhone :one
-SELECT username, hashed_password, full_name, international_phone_number, password_changed_at, created_at, phone_verified, role FROM users
+SELECT username, hashed_password, full_name, international_phone_number, password_changed_at, created_at, phone_verified, role, token, avatar, fcmtoken, online FROM users
 WHERE international_phone_number = $1
 LIMIT 1
 `
@@ -88,12 +104,16 @@ func (q *Queries) GetUserByPhone(ctx context.Context, internationalPhoneNumber s
 		&i.CreatedAt,
 		&i.PhoneVerified,
 		&i.Role,
+		&i.Token,
+		&i.Avatar,
+		&i.Fcmtoken,
+		&i.Online,
 	)
 	return i, err
 }
 
 const listUsers = `-- name: ListUsers :many
-SELECT username, hashed_password, full_name, international_phone_number, password_changed_at, created_at, phone_verified, role FROM users ORDER BY username LIMIT $1 OFFSET $2
+SELECT username, hashed_password, full_name, international_phone_number, password_changed_at, created_at, phone_verified, role, token, avatar, fcmtoken, online FROM users ORDER BY username LIMIT $1 OFFSET $2
 `
 
 type ListUsersParams struct {
@@ -119,6 +139,10 @@ func (q *Queries) ListUsers(ctx context.Context, arg ListUsersParams) ([]User, e
 			&i.CreatedAt,
 			&i.PhoneVerified,
 			&i.Role,
+			&i.Token,
+			&i.Avatar,
+			&i.Fcmtoken,
+			&i.Online,
 		); err != nil {
 			return nil, err
 		}
@@ -134,7 +158,7 @@ func (q *Queries) ListUsers(ctx context.Context, arg ListUsersParams) ([]User, e
 }
 
 const updateUser = `-- name: UpdateUser :one
-UPDATE users SET hashed_password = $2, full_name = $3, international_phone_number = $4 WHERE username = $1 RETURNING username, hashed_password, full_name, international_phone_number, password_changed_at, created_at, phone_verified, role
+UPDATE users SET hashed_password = $2, full_name = $3, international_phone_number = $4, token = $5, avatar = $6 WHERE username = $1 RETURNING username, hashed_password, full_name, international_phone_number, password_changed_at, created_at, phone_verified, role, token, avatar, fcmtoken, online
 `
 
 type UpdateUserParams struct {
@@ -142,6 +166,8 @@ type UpdateUserParams struct {
 	HashedPassword           string `json:"hashed_password"`
 	FullName                 string `json:"full_name"`
 	InternationalPhoneNumber string `json:"international_phone_number"`
+	Token                    string `json:"token"`
+	Avatar                   string `json:"avatar"`
 }
 
 func (q *Queries) UpdateUser(ctx context.Context, arg UpdateUserParams) (User, error) {
@@ -150,6 +176,8 @@ func (q *Queries) UpdateUser(ctx context.Context, arg UpdateUserParams) (User, e
 		arg.HashedPassword,
 		arg.FullName,
 		arg.InternationalPhoneNumber,
+		arg.Token,
+		arg.Avatar,
 	)
 	var i User
 	err := row.Scan(
@@ -161,6 +189,38 @@ func (q *Queries) UpdateUser(ctx context.Context, arg UpdateUserParams) (User, e
 		&i.CreatedAt,
 		&i.PhoneVerified,
 		&i.Role,
+		&i.Token,
+		&i.Avatar,
+		&i.Fcmtoken,
+		&i.Online,
 	)
 	return i, err
+}
+
+const updateUserFCMToken = `-- name: UpdateUserFCMToken :exec
+UPDATE users SET fcmtoken = $2 WHERE username = $1
+`
+
+type UpdateUserFCMTokenParams struct {
+	Username string `json:"username"`
+	Fcmtoken string `json:"fcmtoken"`
+}
+
+func (q *Queries) UpdateUserFCMToken(ctx context.Context, arg UpdateUserFCMTokenParams) error {
+	_, err := q.db.ExecContext(ctx, updateUserFCMToken, arg.Username, arg.Fcmtoken)
+	return err
+}
+
+const updateUserOnline = `-- name: UpdateUserOnline :exec
+UPDATE users SET online = $2 WHERE username = $1
+`
+
+type UpdateUserOnlineParams struct {
+	Username string `json:"username"`
+	Online   bool   `json:"online"`
+}
+
+func (q *Queries) UpdateUserOnline(ctx context.Context, arg UpdateUserOnlineParams) error {
+	_, err := q.db.ExecContext(ctx, updateUserOnline, arg.Username, arg.Online)
+	return err
 }

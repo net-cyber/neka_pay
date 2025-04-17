@@ -53,6 +53,8 @@ type Querier interface {
 	UpdateFinancialInstitution(ctx context.Context, arg UpdateFinancialInstitutionParams) (FinancialInstitution, error)
 	UpdateTransfer(ctx context.Context, arg UpdateTransferParams) (Transfer, error)
 	UpdateUser(ctx context.Context, arg UpdateUserParams) (User, error)
+	UpdateUserFCMToken(ctx context.Context, arg UpdateUserFCMTokenParams) error
+	UpdateUserOnline(ctx context.Context, arg UpdateUserOnlineParams) error
 	UpdateUserPhoneVerified(ctx context.Context, internationalPhoneNumber string) error
 }
 

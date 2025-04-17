@@ -16,10 +16,11 @@ import (
 )
 
 type createUserRequest struct {
-	Username                   string `json:"username" binding:"required,alphanum"`
-	Password                   string `json:"password" binding:"required,min=6"`
-	FullName                   string `json:"full_name" binding:"required"`
-	International_phone_number string `json:"international_phone_number" binding:"required"`
+	Username                   string `form:"username" binding:"required,alphanum"`
+	Password                   string `form:"password" binding:"required,min=6"`
+	FullName                   string `form:"full_name" binding:"required"`
+	International_phone_number string `form:"international_phone_number" binding:"required"`
+	Fcmtoken                   string `form:"fcmtoken" binding:"required"`
 }
 
 type userResponse struct {
@@ -44,8 +45,8 @@ func newUserResponse(user db.User) userResponse {
 
 func (server *Server) createUser(ctx *gin.Context) {
 	var req createUserRequest
-	if err := ctx.ShouldBindJSON(&req); err != nil {
-		logrus.WithError(err).Error("Failed to bind JSON for createUser")
+	if err := ctx.ShouldBind(&req); err != nil {
+		logrus.WithError(err).Error("Failed to bind form data for createUser")
 		ctx.JSON(http.StatusBadRequest, errorResponse(err))
 		return
 	}
@@ -57,11 +58,33 @@ func (server *Server) createUser(ctx *gin.Context) {
 		return
 	}
 
+	token := uuid.New().String()
+
+	// Get the logo file
+	file, header, err := ctx.Request.FormFile("logo")
+	if err != nil {
+		ctx.JSON(http.StatusBadRequest, errorResponse(errors.New("logo file is required")))
+		return
+	}
+	defer file.Close()
+
+	// Upload logo to Cloudinary
+	logoURL, err := server.cloudinary.UploadLogo(ctx, file, header, req.Username, "users")
+	if err != nil {
+		ctx.JSON(http.StatusInternalServerError, errorResponse(err))
+		return
+	}
+	avatar := logoURL
+
 	arg := db.CreateUserParams{
 		Username:                 req.Username,
 		HashedPassword:           hashedPassword,
 		FullName:                 req.FullName,
 		InternationalPhoneNumber: req.International_phone_number,
+		Token:                    token,
+		Avatar:                   avatar,
+		Online:                   true,
+		Fcmtoken:                 req.Fcmtoken,
 	}
 
 	user, err := server.store.CreateUser(ctx, arg)
