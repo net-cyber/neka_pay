@@ -45,6 +45,9 @@ func newUserResponse(user db.User) userResponse {
 	}
 }
 
+
+
+
 func (server *Server) createUser(ctx *gin.Context) {
 	var req createUserRequest
 	if err := ctx.ShouldBind(&req); err != nil {

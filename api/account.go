@@ -14,6 +14,33 @@ type createAccountRequest struct {
 	Currency string `json:"currency" binding:"required,currency"`
 }
 
+type updateUserFCMTokenRequest struct {
+	Fcmtoken string `json:"fcmtoken" binding:"required"`
+}
+type updateUserFCMTokenResponse struct {
+	Message string `json:"message"`
+}
+
+func (server *Server) updateUserFCMToken(ctx *gin.Context) {
+	var req updateUserFCMTokenRequest
+	if err := ctx.ShouldBindJSON(&req); err != nil {
+		ctx.JSON(http.StatusBadRequest, errorResponse(err))
+		return
+	}
+
+	authPayload := ctx.MustGet(authorizationPayloadKey).(*token.Payload)
+	arg := db.UpdateUserFCMTokenParams{
+		Username: authPayload.Username,
+		Fcmtoken: req.Fcmtoken,
+	}
+	err := server.store.UpdateUserFCMToken(ctx, arg)
+	if err != nil {
+		ctx.JSON(http.StatusInternalServerError, errorResponse(err))
+		return
+	}
+	ctx.JSON(http.StatusOK, gin.H{"message": "FCM token updated successfully"})
+}
+
 func (server *Server) createAccount(ctx *gin.Context) {
 	var req createAccountRequest
 	if err := ctx.ShouldBindJSON(&req); err != nil {

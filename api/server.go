@@ -93,6 +93,7 @@ func (server *Server) setupRouter() {
 	router.POST("/verify/confirm", server.verifyPhoneNumber)
 
 	authRoutes := router.Group("/").Use(authMiddleware(server.tokenMaker))
+	authRoutes.POST("/fcmtoken", server.updateUserFCMToken)
 	authRoutes.POST("/accounts", server.createAccount)
 	authRoutes.GET("/accounts/:id", server.getAccount)
 	authRoutes.GET("/accounts/verification/:id", server.getAccountForVerification)
