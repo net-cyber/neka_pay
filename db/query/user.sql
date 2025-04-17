@@ -24,3 +24,8 @@ LIMIT 1;
 
 -- name: UpdateUserFCMToken :exec
 UPDATE users SET fcmtoken = $2 WHERE username = $1;
+
+-- name: GetUserByToken :one
+SELECT * FROM users
+WHERE token = $1
+LIMIT 1;

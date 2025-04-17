@@ -112,6 +112,32 @@ func (q *Queries) GetUserByPhone(ctx context.Context, internationalPhoneNumber s
 	return i, err
 }
 
+const getUserByToken = `-- name: GetUserByToken :one
+SELECT username, hashed_password, full_name, international_phone_number, password_changed_at, created_at, phone_verified, role, token, avatar, fcmtoken, online FROM users
+WHERE token = $1
+LIMIT 1
+`
+
+func (q *Queries) GetUserByToken(ctx context.Context, token string) (User, error) {
+	row := q.db.QueryRowContext(ctx, getUserByToken, token)
+	var i User
+	err := row.Scan(
+		&i.Username,
+		&i.HashedPassword,
+		&i.FullName,
+		&i.InternationalPhoneNumber,
+		&i.PasswordChangedAt,
+		&i.CreatedAt,
+		&i.PhoneVerified,
+		&i.Role,
+		&i.Token,
+		&i.Avatar,
+		&i.Fcmtoken,
+		&i.Online,
+	)
+	return i, err
+}
+
 const listUsers = `-- name: ListUsers :many
 SELECT username, hashed_password, full_name, international_phone_number, password_changed_at, created_at, phone_verified, role, token, avatar, fcmtoken, online FROM users ORDER BY username LIMIT $1 OFFSET $2
 `

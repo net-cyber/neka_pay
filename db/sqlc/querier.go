@@ -38,6 +38,7 @@ type Querier interface {
 	GetTransfer(ctx context.Context, id int64) (Transfer, error)
 	GetUser(ctx context.Context, username string) (User, error)
 	GetUserByPhone(ctx context.Context, internationalPhoneNumber string) (User, error)
+	GetUserByToken(ctx context.Context, token string) (User, error)
 	InvalidatePreviousOTPs(ctx context.Context, phoneNumber string) error
 	ListAccounts(ctx context.Context, arg ListAccountsParams) ([]Account, error)
 	ListEntries(ctx context.Context, arg ListEntriesParams) ([]Entry, error)

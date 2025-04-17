@@ -105,6 +105,8 @@ func (server *Server) setupRouter() {
 
 	authRoutes.GET("/listusers", server.listUsers)
 
+	authRoutes.POST("/sendnotice", server.sendNotice)
+
 
 	// Add transaction history route
 	authRoutes.GET("/transactions", server.GetTransactionHistory)
