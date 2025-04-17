@@ -103,6 +103,9 @@ func (server *Server) setupRouter() {
 	authRoutes.GET("/accounts/validate", server.validateUserAccountBalance)
 	authRoutes.POST("/accounts/:id/topup", server.topUpAccount)
 
+	authRoutes.GET("/listusers", server.listUsers)
+
+
 	// Add transaction history route
 	authRoutes.GET("/transactions", server.GetTransactionHistory)
 

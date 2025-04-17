@@ -14,6 +14,66 @@ type createAccountRequest struct {
 	Currency string `json:"currency" binding:"required,currency"`
 }
 
+type listUsersRequest struct {
+	PageID   int32 `form:"page_id" binding:"required,min=1"`
+	PageSize int32 `form:"page_size" binding:"required,min=5,max=10"`
+}
+
+type listUsersResponse struct {
+	Username                   string `json:"username"`
+	FullName                   string `json:"full_name"`
+	International_phone_number string `json:"international_phone_number"`
+	Avatar                     string `json:"avatar"`
+	Fcmtoken                   string `json:"fcmtoken"`
+	Online                     bool   `json:"online"`
+	Token                      string `json:"token"`
+	Role                       string `json:"role"`
+	PhoneVerified              bool   `json:"phone_verified"`
+}
+
+func newListUsersResponse(user db.User) listUsersResponse {
+	return listUsersResponse{
+		Username:                   user.Username,
+		FullName:                   user.FullName,
+		International_phone_number: user.InternationalPhoneNumber,
+		Avatar:                     user.Avatar,
+		PhoneVerified:              user.PhoneVerified,
+		Fcmtoken:                   user.Fcmtoken,
+		Online:                     user.Online,
+		Token:                      user.Token,
+		Role:                       user.Role,
+	}
+}
+
+func (server *Server) listUsers(ctx *gin.Context) {
+	var req listUsersRequest
+	if err := ctx.ShouldBindQuery(&req); err != nil {
+		ctx.JSON(http.StatusBadRequest, errorResponse(err))
+		return
+	}
+	authPayload := ctx.MustGet(authorizationPayloadKey).(*token.Payload)
+	
+	arg := db.ListUsersOthersParams{
+		Limit:  req.PageSize,
+		Offset: (req.PageID - 1) * req.PageSize,
+		Username:  authPayload.Username,
+	}
+
+	users, err := server.store.ListUsersOthers(ctx, arg)
+	if err != nil {
+		ctx.JSON(http.StatusInternalServerError, errorResponse(err))
+		return
+	}
+
+	response := make([]listUsersResponse, len(users))
+	for i, user := range users {
+		
+		response[i] = newListUsersResponse(user)
+	}
+
+	ctx.JSON(http.StatusOK, response)
+}
+
 type updateUserFCMTokenRequest struct {
 	Fcmtoken string `json:"fcmtoken" binding:"required"`
 }

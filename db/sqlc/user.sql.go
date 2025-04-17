@@ -157,6 +157,52 @@ func (q *Queries) ListUsers(ctx context.Context, arg ListUsersParams) ([]User, e
 	return items, nil
 }
 
+const listUsersOthers = `-- name: ListUsersOthers :many
+SELECT username, hashed_password, full_name, international_phone_number, password_changed_at, created_at, phone_verified, role, token, avatar, fcmtoken, online FROM users WHERE username != $1 ORDER BY username LIMIT $2 OFFSET $3
+`
+
+type ListUsersOthersParams struct {
+	Username string `json:"username"`
+	Limit    int32  `json:"limit"`
+	Offset   int32  `json:"offset"`
+}
+
+func (q *Queries) ListUsersOthers(ctx context.Context, arg ListUsersOthersParams) ([]User, error) {
+	rows, err := q.db.QueryContext(ctx, listUsersOthers, arg.Username, arg.Limit, arg.Offset)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	items := []User{}
+	for rows.Next() {
+		var i User
+		if err := rows.Scan(
+			&i.Username,
+			&i.HashedPassword,
+			&i.FullName,
+			&i.InternationalPhoneNumber,
+			&i.PasswordChangedAt,
+			&i.CreatedAt,
+			&i.PhoneVerified,
+			&i.Role,
+			&i.Token,
+			&i.Avatar,
+			&i.Fcmtoken,
+			&i.Online,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Close(); err != nil {
+		return nil, err
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
 const updateUser = `-- name: UpdateUser :one
 UPDATE users SET hashed_password = $2, full_name = $3, international_phone_number = $4, token = $5, avatar = $6 WHERE username = $1 RETURNING username, hashed_password, full_name, international_phone_number, password_changed_at, created_at, phone_verified, role, token, avatar, fcmtoken, online
 `
