@@ -14,9 +14,6 @@ import (
 )
 
 type sendNoticeRequest struct {
-	UserToken  string `json:"user_token" binding:"required"`
-	UserAvatar string `json:"user_avatar" binding:"required"`
-	UserName   string `json:"user_name" binding:"required"`
 	ToToken    string `json:"to_token" binding:"required"`
 	ToName     string `json:"to_name"`
 	ToAvatar   string `json:"to_avatar"`
@@ -37,7 +34,7 @@ func (server *Server) sendNotice(ctx *gin.Context) {
 		return
 	}
 
-	log.Printf("Notification request received: type=%s, from=%s to=%s", req.CallType, req.UserName, req.ToToken)
+	// log.Printf("Notification request received: type=%s, from=%s to=%s", req.CallType, req.UserName, req.ToToken)
 
 	// Find user by token
 	user, err := server.store.GetUserByToken(ctx, req.ToToken)
@@ -82,9 +79,9 @@ func (server *Server) sendNotice(ctx *gin.Context) {
 
 	// Prepare message data (common for all message types)
 	data := map[string]string{
-		"token":     req.UserToken,
-		"avatar":    req.UserAvatar,
-		"name":      req.UserName,
+		"token":     user.Token,
+		"avatar":    user.Avatar,
+		"name":      user.Username,
 		"call_type": req.CallType,
 	}
 
@@ -105,7 +102,7 @@ func (server *Server) sendNotice(ctx *gin.Context) {
 				Priority: "high",
 				Notification: &messaging.AndroidNotification{
 					ChannelID: "com.dbestech.chatty.call",
-					Title:     "Voice call made by " + req.UserName,
+					Title:     "Voice call made by " + user.Username,
 					Body:      "Please click to answer the voice call",
 				},
 			},
@@ -116,8 +113,8 @@ func (server *Server) sendNotice(ctx *gin.Context) {
 				Payload: &messaging.APNSPayload{
 					Aps: &messaging.Aps{
 						Alert: &messaging.ApsAlert{
-							Title: "Video call made by " + req.UserName,
-							Body:  "Please click to answer the video call",
+							Title: "Voice call made by " + user.Username,
+							Body:  "Please click to answer the voice call",
 						},
 						Badge: func() *int { i := 1; return &i }(),
 						Sound: "task_cancel.caf",
@@ -133,7 +130,7 @@ func (server *Server) sendNotice(ctx *gin.Context) {
 				Priority: "high",
 				Notification: &messaging.AndroidNotification{
 					ChannelID: "com.dbestech.chatty.call",
-					Title:     "Video call made by " + req.UserName,
+					Title:     "Video call made by " + user.Username,
 					Body:      "Please click to answer the video call",
 				},
 			},
@@ -144,7 +141,7 @@ func (server *Server) sendNotice(ctx *gin.Context) {
 				Payload: &messaging.APNSPayload{
 					Aps: &messaging.Aps{
 						Alert: &messaging.ApsAlert{
-							Title: "Video call made by " + req.UserName,
+							Title: "Video call made by " + user.Username,
 							Body:  "Please click to answer the video call",
 						},
 						Badge: func() *int { i := 1; return &i }(),
@@ -161,7 +158,7 @@ func (server *Server) sendNotice(ctx *gin.Context) {
 				Priority: "high",
 				Notification: &messaging.AndroidNotification{
 					ChannelID: "com.dbestech.chatty.message",
-					Title:     "Message made by " + req.UserName,
+					Title:     "Message made by " + user.Username,
 					Body:      "Please click to answer the Message",
 				},
 			},
@@ -172,7 +169,7 @@ func (server *Server) sendNotice(ctx *gin.Context) {
 				Payload: &messaging.APNSPayload{
 					Aps: &messaging.Aps{
 						Alert: &messaging.ApsAlert{
-							Title: "Message made by " + req.UserName,
+							Title: "Message made by " + user.Username,
 							Body:  "Please click to answer the Message",
 						},
 						Badge: func() *int { i := 1; return &i }(),
