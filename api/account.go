@@ -52,11 +52,11 @@ func (server *Server) listUsers(ctx *gin.Context) {
 		return
 	}
 	authPayload := ctx.MustGet(authorizationPayloadKey).(*token.Payload)
-	
+
 	arg := db.ListUsersOthersParams{
-		Limit:  req.PageSize,
-		Offset: (req.PageID - 1) * req.PageSize,
-		Username:  authPayload.Username,
+		Limit:    req.PageSize,
+		Offset:   (req.PageID - 1) * req.PageSize,
+		Username: authPayload.Username,
 	}
 
 	users, err := server.store.ListUsersOthers(ctx, arg)
@@ -67,7 +67,7 @@ func (server *Server) listUsers(ctx *gin.Context) {
 
 	response := make([]listUsersResponse, len(users))
 	for i, user := range users {
-		
+
 		response[i] = newListUsersResponse(user)
 	}
 
@@ -162,7 +162,7 @@ func (server *Server) getAccountForVerification(ctx *gin.Context) {
 	authPayload := ctx.MustGet(authorizationPayloadKey).(*token.Payload)
 	if account.Owner == authPayload.Username {
 		err := errors.New("You cannot send to yourself")
-		ctx.JSON(http.StatusUnauthorized, errorResponse(err))
+		ctx.JSON(http.StatusNotFound, errorResponse(err))
 		return
 	}
 
