@@ -49,34 +49,37 @@ func (maker *RTCMaker) CreateRTCToken(channelName string, uid uint32, expireDura
 
 	// Generate a random salt between 1 and 99999999
 	rand.Seed(time.Now().UnixNano())
-	salt := rand.Uint32()%99999999 + 1
+	salt := rand.Intn(99999999) + 1 // Use Intn to match PHP's rand function
 
-	// Create signature
-	signature := maker.generateSignature(issueTime, salt)
-
-	// Pack the data
+	// Pack the data into a buffer
 	var buffer bytes.Buffer
+
+	// First pack the signature
+	signature := maker.generateSignature(issueTime, uint32(salt))
+	packString(&buffer, string(signature))
 
 	// Pack appID
 	packString(&buffer, maker.appID)
 
-	// Pack issueTime, expireTime, salt
-	binary.Write(&buffer, binary.LittleEndian, issueTime)
-	binary.Write(&buffer, binary.LittleEndian, expireTime)
-	binary.Write(&buffer, binary.LittleEndian, salt)
+	// Pack issueTime
+	packUint32(&buffer, issueTime)
+
+	// Pack expireTime
+	packUint32(&buffer, expireTime)
+
+	// Pack salt
+	packUint32(&buffer, uint32(salt))
 
 	// Pack service type count (1 for RTC only)
-	binary.Write(&buffer, binary.LittleEndian, uint16(1))
+	packUint16(&buffer, 1)
 
 	// Pack service type (1 for RTC)
-	binary.Write(&buffer, binary.LittleEndian, uint16(1))
+	packUint16(&buffer, 1)
 
-	// Pack privileges map size (1 for join channel privilege)
-	binary.Write(&buffer, binary.LittleEndian, uint16(1))
-
-	// Pack join channel privilege and expiration
-	binary.Write(&buffer, binary.LittleEndian, uint16(RTCPrivilegeJoinChannel))
-	binary.Write(&buffer, binary.LittleEndian, expireTime)
+	// Pack privileges map
+	packMapUint32(&buffer, map[uint16]uint32{
+		RTCPrivilegeJoinChannel: expireTime,
+	})
 
 	// Pack channel name
 	packString(&buffer, channelName)
@@ -85,15 +88,13 @@ func (maker *RTCMaker) CreateRTCToken(channelName string, uid uint32, expireDura
 	uidStr := fmt.Sprintf("%d", uid)
 	packString(&buffer, uidStr)
 
-	// Combine signature with data
-	var finalBuffer bytes.Buffer
-	packString(&finalBuffer, string(signature))
-	finalBuffer.Write(buffer.Bytes())
-
 	// Compress with zlib
 	var zlibBuffer bytes.Buffer
-	zw := zlib.NewWriter(&zlibBuffer)
-	zw.Write(finalBuffer.Bytes())
+	zw, _ := zlib.NewWriterLevel(&zlibBuffer, zlib.DefaultCompression)
+	_, err := zw.Write(buffer.Bytes())
+	if err != nil {
+		return "", fmt.Errorf("failed to compress token: %w", err)
+	}
 	zw.Close()
 
 	// Base64 encode
@@ -106,25 +107,55 @@ func (maker *RTCMaker) CreateRTCToken(channelName string, uid uint32, expireDura
 // Helper functions
 
 func (maker *RTCMaker) generateSignature(issueTime, salt uint32) []byte {
-	// First HMAC with app certificate
+	// First HMAC with app certificate and issue time
+	var timeBuffer bytes.Buffer
+	packUint32(&timeBuffer, issueTime)
+
 	h := hmac.New(sha256.New, []byte(maker.appCertificate))
-	var buffer bytes.Buffer
-	binary.Write(&buffer, binary.LittleEndian, issueTime)
-	h.Write(buffer.Bytes())
-	hh := h.Sum(nil)
+	h.Write(timeBuffer.Bytes())
+	hmacResult := h.Sum(nil)
 
 	// Second HMAC with salt
-	h = hmac.New(sha256.New, hh)
-	buffer.Reset()
-	binary.Write(&buffer, binary.LittleEndian, salt)
-	h.Write(buffer.Bytes())
+	var saltBuffer bytes.Buffer
+	packUint32(&saltBuffer, salt)
+
+	h = hmac.New(sha256.New, hmacResult)
+	h.Write(saltBuffer.Bytes())
 
 	return h.Sum(nil)
 }
 
+func packUint16(buffer *bytes.Buffer, val uint16) {
+	b := make([]byte, 2)
+	// Use little-endian to match PHP's pack("v", $x)
+	binary.LittleEndian.PutUint16(b, val)
+	buffer.Write(b)
+}
+
+func packUint32(buffer *bytes.Buffer, val uint32) {
+	b := make([]byte, 4)
+	// Use little-endian to match PHP's pack("V", $x)
+	binary.LittleEndian.PutUint32(b, val)
+	buffer.Write(b)
+}
+
 func packString(buffer *bytes.Buffer, s string) {
-	binary.Write(buffer, binary.LittleEndian, uint16(len(s)))
+	// Pack string length as uint16
+	packUint16(buffer, uint16(len(s)))
+	// Pack string content
 	buffer.WriteString(s)
+}
+
+func packMapUint32(buffer *bytes.Buffer, m map[uint16]uint32) {
+	// Pack map size
+	packUint16(buffer, uint16(len(m)))
+
+	// Sort keys for consistent output
+	// Note: In a real implementation, you'd want to sort the keys here
+	for k, v := range m {
+		packUint16(buffer, k)
+		packUint32(buffer, v)
+	}
 }
 
 func isValidUUID(uuid string) bool {

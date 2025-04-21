@@ -9,8 +9,8 @@ import (
 
 // GetRTCTokenRequest defines the request structure for obtaining an RTC token
 type GetRTCTokenRequest struct {
-	ChannelName string `json:"channel_name" binding:"required"`
-	UID         uint32 `json:"uid" binding:"omitempty"`
+	ChannelName string `json:"channel_name" form:"channel_name" binding:"required"`
+	UID         uint32 `json:"uid" form:"uid" binding:"omitempty"`
 }
 
 // GetRTCTokenResponse defines the response structure for the RTC token
@@ -24,7 +24,9 @@ type GetRTCTokenResponse struct {
 // This endpoint is now available for non-authorized users
 func (server *Server) getRTCToken(ctx *gin.Context) {
 	var req GetRTCTokenRequest
-	if err := ctx.ShouldBindJSON(&req); err != nil {
+
+	// Try to bind from both JSON and form data to match PHP's behavior
+	if err := ctx.ShouldBind(&req); err != nil {
 		ctx.JSON(http.StatusBadRequest, GetRTCTokenResponse{
 			Code: -1,
 			Data: "",
