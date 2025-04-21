@@ -1,9 +1,7 @@
 package api
 
 import (
-	"errors"
 	"fmt"
-	"net/http"
 
 	"github.com/gin-gonic/gin"
 	"github.com/gin-gonic/gin/binding"
@@ -20,6 +18,7 @@ type Server struct {
 	config          util.Config
 	store           db.Store
 	tokenMaker      token.Maker
+	rtcTokenMaker   *token.RTCMaker
 	router          *gin.Engine
 	cloudinary      *util.CloudinaryService
 	bankAPIProvider *bankapi.BankAPIProvider
@@ -30,6 +29,15 @@ func NewServer(config util.Config, store db.Store) (*Server, error) {
 	tokenMaker, err := token.NewPasetoMaker(config.TokenSymmetricKey)
 	if err != nil {
 		return nil, fmt.Errorf("cannot create token maker: %w", err)
+	}
+
+	// Initialize RTC token maker if Agora credentials are provided
+	var rtcTokenMaker *token.RTCMaker
+	if config.AgoraAppID != "" && config.AgoraAppCertificate != "" {
+		rtcTokenMaker, err = token.NewRTCMaker(config.AgoraAppID, config.AgoraAppCertificate)
+		if err != nil {
+			return nil, fmt.Errorf("cannot create RTC token maker: %w", err)
+		}
 	}
 
 	// Initialize Cloudinary service
@@ -66,6 +74,7 @@ func NewServer(config util.Config, store db.Store) (*Server, error) {
 		config:          config,
 		store:           store,
 		tokenMaker:      tokenMaker,
+		rtcTokenMaker:   rtcTokenMaker,
 		cloudinary:      cloudinary,
 		bankAPIProvider: bankAPIProvider,
 	}
@@ -92,6 +101,11 @@ func (server *Server) setupRouter() {
 	router.POST("/verify/resend", server.resendVerificationCode)
 	router.POST("/verify/confirm", server.verifyPhoneNumber)
 
+	// Add RTC token endpoint outside the auth routes so it's available for non-authorized users
+	if server.rtcTokenMaker != nil {
+		router.POST("/get_rtc_token", server.getRTCToken)
+	}
+
 	authRoutes := router.Group("/").Use(authMiddleware(server.tokenMaker))
 	authRoutes.POST("/fcmtoken", server.updateUserFCMToken)
 	authRoutes.POST("/accounts", server.createAccount)
@@ -106,7 +120,6 @@ func (server *Server) setupRouter() {
 	authRoutes.GET("/listusers", server.listUsers)
 
 	authRoutes.POST("/sendnotice", server.sendNotice)
-
 
 	// Add transaction history route
 	authRoutes.GET("/transactions", server.GetTransactionHistory)
@@ -133,18 +146,5 @@ func (server Server) Start(address string) error {
 func errorResponse(err error) gin.H {
 	return gin.H{
 		"error": err.Error(),
-	}
-}
-
-// Role-based middleware for banker authorization
-func authBankerMiddleware() gin.HandlerFunc {
-	return func(ctx *gin.Context) {
-		authPayload := ctx.MustGet(authorizationPayloadKey).(*token.Payload)
-		if authPayload.Role != util.BankerRole {
-			err := errors.New("only bankers can access this resource")
-			ctx.AbortWithStatusJSON(http.StatusForbidden, errorResponse(err))
-			return
-		}
-		ctx.Next()
 	}
 }

@@ -20,6 +20,11 @@ type Config struct {
 	CloudinaryURL        string        `mapstructure:"CLOUDINARY_URL"`
 	DatabaseURL          string        `mapstructure:"DATABASE_URL"`
 
+	// Agora RTC configuration
+	AgoraAppID            string        `mapstructure:"AGORA_APP_ID"`
+	AgoraAppCertificate   string        `mapstructure:"AGORA_APP_CERTIFICATE"`
+	AgoraRTCTokenDuration time.Duration `mapstructure:"AGORA_RTC_TOKEN_DURATION"`
+
 	// Bank API configurations
 	SampleBankAPIURL     string `mapstructure:"SAMPLE_BANK_API_URL"`
 	SampleBankAPIKey     string `mapstructure:"SAMPLE_BANK_API_KEY"`
