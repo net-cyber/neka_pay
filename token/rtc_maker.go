@@ -1,13 +1,13 @@
 package token
 
 import (
-	"bytes"
-	"compress/zlib"
 	"crypto/hmac"
 	"crypto/sha256"
 	"encoding/base64"
 	"encoding/binary"
+	"encoding/hex"
 	"fmt"
+	"io"
 	"math/rand"
 	"regexp"
 	"time"
@@ -17,15 +17,24 @@ import (
 type RTCMaker struct {
 	appID          string
 	appCertificate string
-	version        string
 }
 
-// RTCPrivilege constants
+// RTCRole defines the role of user in channel
+type RTCRole uint16
+
 const (
-	RTCPrivilegeJoinChannel        = 1
-	RTCPrivilegePublishAudioStream = 2
-	RTCPrivilegePublishVideoStream = 3
-	RTCPrivilegePublishDataStream  = 4
+	// RolePublisher can publish streams to channel
+	RolePublisher RTCRole = 1
+	// RoleSubscriber can only subscribe to streams in channel
+	RoleSubscriber RTCRole = 2
+)
+
+// RTCPrivilege constants for AccessToken2
+const (
+	RTCPrivilegeJoinChannel        uint16 = 1
+	RTCPrivilegePublishAudioStream uint16 = 2
+	RTCPrivilegePublishVideoStream uint16 = 3
+	RTCPrivilegePublishDataStream  uint16 = 4
 )
 
 // NewRTCMaker creates a new RTCMaker instance
@@ -37,125 +46,264 @@ func NewRTCMaker(appID, appCertificate string) (*RTCMaker, error) {
 	return &RTCMaker{
 		appID:          appID,
 		appCertificate: appCertificate,
-		version:        "007", // Using the same version as in PHP implementation
 	}, nil
 }
 
-// CreateRTCToken generates a token for RTC service
+// CreateRTCToken generates an AccessToken2 for RTC service
 func (maker *RTCMaker) CreateRTCToken(channelName string, uid uint32, expireDuration time.Duration) (string, error) {
-	// Current timestamp
-	issueTime := uint32(time.Now().Unix())
-	expireTime := uint32(time.Now().Add(expireDuration).Unix())
+	// Default to RolePublisher
+	role := RolePublisher
 
-	// Generate a random salt between 1 and 99999999
+	// Convert duration to seconds
+	expireSeconds := uint32(expireDuration.Seconds())
+
+	// Use BuildTokenWithUid to generate the token
+	return maker.BuildTokenWithUid(channelName, uid, role, expireSeconds, expireSeconds)
+}
+
+// BuildTokenWithUid generates an AccessToken2 with user ID and role
+func (maker *RTCMaker) BuildTokenWithUid(channelName string, uid uint32, role RTCRole, tokenExpire, privilegeExpire uint32) (string, error) {
+	// Get current timestamp
+	issueTs := uint32(time.Now().Unix())
+
+	// Calculate expiration time
+	expireTs := issueTs + tokenExpire
+
+	// Create random salt
 	rand.Seed(time.Now().UnixNano())
-	salt := rand.Intn(99999999) + 1 // Use Intn to match PHP's rand function
+	salt := rand.Uint32()
 
-	// Pack the data into a buffer
-	var buffer bytes.Buffer
+	// Create privilege map
+	privileges := make(map[uint16]uint32)
+	privileges[RTCPrivilegeJoinChannel] = issueTs + privilegeExpire
 
-	// First pack the signature
-	signature := maker.generateSignature(issueTime, uint32(salt))
-	packString(&buffer, string(signature))
+	// If role is publisher, add publishing privileges
+	if role == RolePublisher {
+		privileges[RTCPrivilegePublishAudioStream] = issueTs + privilegeExpire
+		privileges[RTCPrivilegePublishVideoStream] = issueTs + privilegeExpire
+		privileges[RTCPrivilegePublishDataStream] = issueTs + privilegeExpire
+	}
 
-	// Pack appID
-	packString(&buffer, maker.appID)
+	// Create access token
+	accessToken := createAccessToken2(maker.appID, maker.appCertificate, channelName,
+		fmt.Sprintf("%d", uid), issueTs, expireTs, salt, privileges)
 
-	// Pack issueTime
-	packUint32(&buffer, issueTime)
+	return accessToken, nil
+}
 
-	// Pack expireTime
-	packUint32(&buffer, expireTime)
+// BuildTokenWithUserAccount generates an AccessToken2 with user account
+func (maker *RTCMaker) BuildTokenWithUserAccount(channelName, account string, role RTCRole, tokenExpire, privilegeExpire uint32) (string, error) {
+	// Get current timestamp
+	issueTs := uint32(time.Now().Unix())
 
-	// Pack salt
-	packUint32(&buffer, uint32(salt))
+	// Calculate expiration time
+	expireTs := issueTs + tokenExpire
 
-	// Pack service type count (1 for RTC only)
-	packUint16(&buffer, 1)
+	// Create random salt
+	rand.Seed(time.Now().UnixNano())
+	salt := rand.Uint32()
 
-	// Pack service type (1 for RTC)
-	packUint16(&buffer, 1)
+	// Create privilege map
+	privileges := make(map[uint16]uint32)
+	privileges[RTCPrivilegeJoinChannel] = issueTs + privilegeExpire
 
-	// Pack privileges map
-	packMapUint32(&buffer, map[uint16]uint32{
-		RTCPrivilegeJoinChannel: expireTime,
-	})
+	// If role is publisher, add publishing privileges
+	if role == RolePublisher {
+		privileges[RTCPrivilegePublishAudioStream] = issueTs + privilegeExpire
+		privileges[RTCPrivilegePublishVideoStream] = issueTs + privilegeExpire
+		privileges[RTCPrivilegePublishDataStream] = issueTs + privilegeExpire
+	}
+
+	// Create access token
+	accessToken := createAccessToken2(maker.appID, maker.appCertificate, channelName,
+		account, issueTs, expireTs, salt, privileges)
+
+	return accessToken, nil
+}
+
+func createAccessToken2(appID, appCertificate, channelName, account string,
+	issueTs, expireTs uint32, salt uint32, privileges map[uint16]uint32) string {
+
+	token := AccessToken2{
+		AppID:          appID,
+		AppCertificate: appCertificate,
+		IssueTs:        issueTs,
+		ExpireTs:       expireTs,
+		Salt:           salt,
+		Services:       make(map[uint16]Service),
+	}
+
+	// Add RTC service with privileges
+	service := Service{
+		ServiceType: 1, // RTC service
+		Privileges:  privileges,
+	}
+	token.AddService(service)
+
+	// Set channel name and user account
+	token.ChannelName = channelName
+	token.UserAccount = account
+
+	// Build and return token
+	return token.Build()
+}
+
+// AccessToken2 represents the new token format
+type AccessToken2 struct {
+	AppID          string
+	AppCertificate string
+	IssueTs        uint32
+	ExpireTs       uint32
+	Salt           uint32
+	Services       map[uint16]Service
+	ChannelName    string
+	UserAccount    string
+}
+
+// Service represents a service in the token
+type Service struct {
+	ServiceType uint16
+	Privileges  map[uint16]uint32
+}
+
+// AddService adds a service to the token
+func (token *AccessToken2) AddService(service Service) {
+	token.Services[service.ServiceType] = service
+}
+
+// Build generates the token string
+func (token *AccessToken2) Build() string {
+	// Generate signature
+	signature := token.generateSignature()
+
+	// Create buffer to build the token
+	buffer := NewBuffer()
+
+	// Add version (version 2)
+	buffer.PackString("002")
+
+	// Add app ID
+	buffer.PackString(token.AppID)
+
+	// Add issue timestamp
+	buffer.PackUint32(token.IssueTs)
+
+	// Add expiration timestamp
+	buffer.PackUint32(token.ExpireTs)
+
+	// Add signature
+	buffer.PackString(signature)
+
+	// Add salt
+	buffer.PackUint32(token.Salt)
+
+	// Add services count
+	buffer.PackUint16(uint16(len(token.Services)))
+
+	// Add each service
+	for serviceType, service := range token.Services {
+		buffer.PackUint16(serviceType)
+
+		// Add privileges count
+		buffer.PackUint16(uint16(len(service.Privileges)))
+
+		// Add each privilege
+		for privilegeKey, expireTs := range service.Privileges {
+			buffer.PackUint16(privilegeKey)
+			buffer.PackUint32(expireTs)
+		}
+	}
+
+	// Add channel name
+	buffer.PackString(token.ChannelName)
+
+	// Add user account
+	buffer.PackString(token.UserAccount)
+
+	// Calculate base64 encoded token
+	return base64.StdEncoding.EncodeToString(buffer.Bytes())
+}
+
+// generateSignature creates a signature for the token
+func (token *AccessToken2) generateSignature() string {
+	// Create buffer for signature
+	buffer := NewBuffer()
+
+	// Pack app ID
+	buffer.PackString(token.AppID)
 
 	// Pack channel name
-	packString(&buffer, channelName)
+	buffer.PackString(token.ChannelName)
 
-	// Pack UID as string
-	uidStr := fmt.Sprintf("%d", uid)
-	packString(&buffer, uidStr)
+	// Pack user account
+	buffer.PackString(token.UserAccount)
 
-	// Compress with zlib
-	var zlibBuffer bytes.Buffer
-	zw, _ := zlib.NewWriterLevel(&zlibBuffer, zlib.DefaultCompression)
-	_, err := zw.Write(buffer.Bytes())
-	if err != nil {
-		return "", fmt.Errorf("failed to compress token: %w", err)
+	// Pack issue timestamp
+	buffer.PackUint32(token.IssueTs)
+
+	// Pack expiration timestamp
+	buffer.PackUint32(token.ExpireTs)
+
+	// Pack salt
+	buffer.PackUint32(token.Salt)
+
+	// Pack services count
+	buffer.PackUint16(uint16(len(token.Services)))
+
+	// Calculate HMAC-SHA256
+	h := hmac.New(sha256.New, []byte(token.AppCertificate))
+	h.Write(buffer.Bytes())
+
+	// Return hex-encoded signature
+	return hex.EncodeToString(h.Sum(nil))
+}
+
+// Buffer is a helper for building binary data
+type Buffer struct {
+	buffer []byte
+}
+
+// NewBuffer creates a new Buffer
+func NewBuffer() *Buffer {
+	return &Buffer{
+		buffer: make([]byte, 0),
 	}
-	zw.Close()
+}
 
-	// Base64 encode
-	b64 := base64.StdEncoding.EncodeToString(zlibBuffer.Bytes())
+// PackUint16 adds a uint16 to the buffer
+func (b *Buffer) PackUint16(val uint16) {
+	buf := make([]byte, 2)
+	binary.LittleEndian.PutUint16(buf, val)
+	b.buffer = append(b.buffer, buf...)
+}
 
-	// Add version prefix
-	return maker.version + b64, nil
+// PackUint32 adds a uint32 to the buffer
+func (b *Buffer) PackUint32(val uint32) {
+	buf := make([]byte, 4)
+	binary.LittleEndian.PutUint32(buf, val)
+	b.buffer = append(b.buffer, buf...)
+}
+
+// PackString adds a string to the buffer
+func (b *Buffer) PackString(val string) {
+	// Add string length
+	b.PackUint16(uint16(len(val)))
+
+	// Add string content
+	b.buffer = append(b.buffer, []byte(val)...)
+}
+
+// Bytes returns the buffer content
+func (b *Buffer) Bytes() []byte {
+	return b.buffer
 }
 
 // Helper functions
 
-func (maker *RTCMaker) generateSignature(issueTime, salt uint32) []byte {
-	// First HMAC with app certificate and issue time
-	var timeBuffer bytes.Buffer
-	packUint32(&timeBuffer, issueTime)
-
+func (maker *RTCMaker) generateSignature(message string) string {
 	h := hmac.New(sha256.New, []byte(maker.appCertificate))
-	h.Write(timeBuffer.Bytes())
-	hmacResult := h.Sum(nil)
-
-	// Second HMAC with salt
-	var saltBuffer bytes.Buffer
-	packUint32(&saltBuffer, salt)
-
-	h = hmac.New(sha256.New, hmacResult)
-	h.Write(saltBuffer.Bytes())
-
-	return h.Sum(nil)
-}
-
-func packUint16(buffer *bytes.Buffer, val uint16) {
-	b := make([]byte, 2)
-	// Use little-endian to match PHP's pack("v", $x)
-	binary.LittleEndian.PutUint16(b, val)
-	buffer.Write(b)
-}
-
-func packUint32(buffer *bytes.Buffer, val uint32) {
-	b := make([]byte, 4)
-	// Use little-endian to match PHP's pack("V", $x)
-	binary.LittleEndian.PutUint32(b, val)
-	buffer.Write(b)
-}
-
-func packString(buffer *bytes.Buffer, s string) {
-	// Pack string length as uint16
-	packUint16(buffer, uint16(len(s)))
-	// Pack string content
-	buffer.WriteString(s)
-}
-
-func packMapUint32(buffer *bytes.Buffer, m map[uint16]uint32) {
-	// Pack map size
-	packUint16(buffer, uint16(len(m)))
-
-	// Sort keys for consistent output
-	// Note: In a real implementation, you'd want to sort the keys here
-	for k, v := range m {
-		packUint16(buffer, k)
-		packUint32(buffer, v)
-	}
+	io.WriteString(h, message)
+	return hex.EncodeToString(h.Sum(nil))
 }
 
 func isValidUUID(uuid string) bool {

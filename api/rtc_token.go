@@ -5,12 +5,14 @@ import (
 	"time"
 
 	"github.com/gin-gonic/gin"
+	"github.com/net-cyber/neka_pay/token"
 )
 
 // GetRTCTokenRequest defines the request structure for obtaining an RTC token
 type GetRTCTokenRequest struct {
 	ChannelName string `json:"channel_name" form:"channel_name" binding:"required"`
 	UID         uint32 `json:"uid" form:"uid" binding:"omitempty"`
+	Role        uint32 `json:"role" form:"role" binding:"omitempty"` // 1 for publisher, 2 for subscriber
 }
 
 // GetRTCTokenResponse defines the response structure for the RTC token
@@ -47,6 +49,12 @@ func (server *Server) getRTCToken(ctx *gin.Context) {
 	// Default to 0 if UID is not provided
 	uid := req.UID
 
+	// Default to publisher role (1) if not specified
+	role := token.RolePublisher
+	if req.Role == 2 {
+		role = token.RoleSubscriber
+	}
+
 	// Generate RTC token with configured duration
 	tokenDuration := server.config.AgoraRTCTokenDuration
 	if tokenDuration == 0 {
@@ -54,7 +62,11 @@ func (server *Server) getRTCToken(ctx *gin.Context) {
 		tokenDuration = 2 * time.Hour
 	}
 
-	token, err := server.rtcTokenMaker.CreateRTCToken(req.ChannelName, uid, tokenDuration)
+	// Convert duration to seconds for token expiration
+	expireSeconds := uint32(tokenDuration.Seconds())
+
+	// Use BuildTokenWithUid to support role-based permissions
+	token, err := server.rtcTokenMaker.BuildTokenWithUid(req.ChannelName, uid, role, expireSeconds, expireSeconds)
 	if err != nil {
 		ctx.JSON(http.StatusInternalServerError, GetRTCTokenResponse{
 			Code: -1,
